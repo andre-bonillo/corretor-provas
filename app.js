@@ -114,7 +114,52 @@ async function abrirPacote(p) {
   $("#prova-nome").textContent = p.nome.replace(" - Gabaritos", "");
   $("#prova-info").textContent = `${p.alunos.length || p.nomes.length} alunos na lista · ${p.versoes.length} tipo(s) de prova`;
   $("#passo-foto").hidden = false;
+  montarQuestoes();
   await listar();
+}
+
+// ---------------------------------------------------------------------------
+// Gabarito e questões (só para consulta)
+// ---------------------------------------------------------------------------
+
+function textoRico(t) {
+  const esc = String(t || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  return esc.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|\W)_(.+?)_(?=\W|$)/g, "$1<i>$2</i>").replace(/\n/g, "<br>");
+}
+
+function htmlQuestao(q) {
+  if (q.tipo === "diss") {
+    const padrao = (q.padrao || []).map(([nivel, t]) =>
+      `<div class="padrao" style="margin-left:${nivel * 14}px">${nivel ? "• " : ""}${textoRico(t)}</div>`).join("");
+    return `<div class="questao"><div class="qtit">Dissertativa ${q.n} · ${numBR(q.pontos || 0)} ponto(s)</div>
+      <div>${textoRico(q.enunciado)}</div>${padrao ? `<div class="qpadrao"><b>Padrão de resposta</b>${padrao}</div>` : ""}</div>`;
+  }
+  const alts = (q.alts || []).map(([l, t]) =>
+    `<div class="alt${String(q.resposta).includes(l) ? " certa" : ""}"><b>${l})</b> ${textoRico(t)}</div>`).join("");
+  return `<div class="questao"><div class="qtit">${q.n} · ${q.tipo === "vf" ? "V ou F" : "Múltipla escolha"} · gabarito <span class="gab">${q.resposta}</span></div>
+    <div>${textoRico(q.enunciado)}</div>${alts}</div>`;
+}
+
+function montarQuestoes() {
+  const sec = $("#sec-questoes");
+  const qs = (pacote && pacote.questoes) || {};
+  const versoes = Object.keys(qs);
+  sec.hidden = !versoes.length;
+  if (!versoes.length) return;
+  const sel = $("#q-versao"); sel.innerHTML = "";
+  for (const v of versoes) { const o = document.createElement("option"); o.value = o.textContent = v; sel.appendChild(o); }
+  const pintar = () => {
+    const lista = qs[sel.value] || [];
+    const obj = lista.filter(q => q.tipo !== "diss");
+    $("#q-gabarito").textContent = obj.length ? obj.map(q => `${q.n}${q.resposta}`).join("  ") : "";
+    $("#q-lista").innerHTML = lista.map(htmlQuestao).join("");
+  };
+  sel.onchange = pintar;
+  pintar();
+}
+
+function questaoDaFolha(versao, n) {
+  return ((pacote.questoes || {})[versao] || []).find(q => q.tipo !== "diss" && q.n === n);
 }
 
 async function listar() {
@@ -148,6 +193,37 @@ function notaAtual() {
   return { resps, ac, diss, completa, nota: completa ? ac * pacote.pontos_objetiva + diss.reduce((a, v) => a + (v || 0), 0) : null };
 }
 
+// Grade compacta: número e resposta de cada questão (verde certa, vermelha errada, contorno laranja a conferir).
+function resumoRespostas() {
+  const caixa = $("#respostas-resumo"); caixa.innerHTML = "";
+  $("#q-detalhe").innerHTML = ""; $("#q-detalhe").dataset.n = "";
+  if (!atual) return;
+  const versao = pacote.versoes.find(v => v.versao === atual.versao);
+  const linhas = {};
+  for (const l of document.querySelectorAll("#respostas .qlinha")) linhas[+l.dataset.i] = l;
+  atual.leitura.respostas.forEach((r, i) => {
+    const l = linhas[i], v = l.dataset.valor, certa = String(versao.respostas[i].resposta || "");
+    const ok = certa === "*" || (v.length === 1 && certa.includes(v));
+    const d = document.createElement("div");
+    d.className = "q" + (ok ? "" : " errada") + (l.classList.contains("duvida") ? " duvida" : "");
+    d.innerHTML = `<span>${r.n}</span><b>${v || "–"}</b>`;
+    d.onclick = () => {
+      const q = questaoDaFolha(atual.versao, r.n), alvo = $("#q-detalhe");
+      if (!q || alvo.dataset.n == r.n) { alvo.innerHTML = ""; alvo.dataset.n = ""; return; }
+      alvo.dataset.n = r.n;
+      alvo.innerHTML = htmlQuestao(q);
+    };
+    caixa.appendChild(d);
+  });
+}
+
+function editarRespostas(ligar) {
+  $("#respostas").hidden = !ligar;
+  $("#respostas-resumo").hidden = ligar;
+  $("#editar-respostas").textContent = ligar ? "Concluir" : "Editar";
+  if (!ligar) resumoRespostas();
+}
+
 function atualizarNota() {
   const n = notaAtual(), total = atual.total;
   $("#r-nota").textContent = (total ? `${n.ac}/${total} acertos · ` : "") + (n.nota === null ? "nota incompleta" : `nota ${numBR(n.nota)}`);
@@ -172,7 +248,7 @@ function mostrar(res, foto) {
   const nomeCv = canvasDe(res.leitura.nomeEscrito); nomeCv.className = "recorte";
   $("#r-nome-img").innerHTML = ""; $("#r-nome-img").appendChild(nomeCv);
   const versao = pacote.versoes.find(v => v.versao === res.versao);
-  const grade = $("#respostas"); grade.innerHTML = "";
+  const grade = $("#respostas"); grade.querySelectorAll(".qlinha").forEach(l => l.remove());
   // uma linha por questão, com as opções como botões (toque para marcar; toque de novo para deixar em branco).
   // As questões com rasura ou marca fraca vêm primeiro, destacadas.
   const ordem = res.leitura.respostas.map((r, i) => i).sort((a, b) =>
@@ -214,6 +290,8 @@ function mostrar(res, foto) {
     pinta();
     grade.appendChild(linha);
   }
+  resumoRespostas();
+  editarRespostas(false);
   $("#bloco-respostas").hidden = !res.leitura.respostas.length;
   const diss = $("#diss"); diss.innerHTML = "";
   res.leitura.notas.forEach((nt, i) => {
@@ -317,6 +395,7 @@ window.addEventListener("load", async () => {
   $("#guardar").onclick = salvarAtual;
   $("#descartar").onclick = () => { atual = null; $("#passo-resultado").hidden = true; status("Folha descartada."); };
   $("#exportar").onclick = exportar;
+  $("#editar-respostas").onclick = () => editarRespostas($("#respostas").hidden);
   const h = await ler("config", "atual").catch(() => null);
   if (h) { const p = await ler("pacotes", h); if (p) await abrirPacote(p); }
 });
