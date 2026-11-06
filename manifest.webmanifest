@@ -1,0 +1,10 @@
+{
+  "name": "Corretor de provas",
+  "short_name": "Corretor",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f3a5f",
+  "icons": [{ "src": "icone.png", "sizes": "512x512", "type": "image/png" }]
+}

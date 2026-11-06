@@ -1,0 +1,8 @@
+onnxruntime-web 1.31.1 (Microsoft, licença MIT - https://github.com/microsoft/onnxruntime/blob/main/LICENSE)
+Origem: https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.31.1.tgz
+Integridade do pacote conferida (sha512 publicado no npm) em 06/11/2026.
+
+SHA-256 dos arquivos:
+b8a78c408c40da65fdc8ba0846f7b2948e92a4c6d6b23cc8e4165e428ad95443 *ort.wasm.min.js
+30ed0b5cd1182ede931fea448afb567d4dc705ec957af09f108a2be5f770dac3 *ort-wasm-simd-threaded.mjs
+4b884c203b0fa48d057be3332c65513ff85aa3c5bddd6946acc0fab7ecda001d *ort-wasm-simd-threaded.wasm
