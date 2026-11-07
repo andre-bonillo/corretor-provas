@@ -1,0 +1,13 @@
+# Proteção: nada de dados de provas, alunos ou notas no repositório público
+*.json
+!manifest.webmanifest
+*.xlsx
+*.xls*
+*.csv
+*.jpg
+*.jpeg
+*.pdf
+*.docx
+*.txt
+!modelos/ppocrv5_latin_dict.txt
+!vendor/ORIGEM.txt

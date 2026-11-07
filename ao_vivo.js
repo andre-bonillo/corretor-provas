@@ -63,12 +63,11 @@ const AoVivo = (() => {
     ctx.lineWidth = 4; ctx.strokeStyle = cor; ctx.stroke();
   }
 
-  function aviso(txt) { el("vivo-aviso").textContent = txt; }
+  function aviso(txt, tipo = "") { const a = el("vivo-aviso"); a.textContent = txt; a.className = tipo; }
 
   async function corrigirAgora() {
     estado = "lendo";
     aviso("Lendo…");
-    const t0 = performance.now();
     const gray = quadroCinza(3200);
     const loc = Leitura.localizar(gray, pacote);
     if (!loc || loc.erro) {
@@ -84,7 +83,7 @@ const AoVivo = (() => {
     mostrar(res);
     el("vivo-painel").scrollTop = 0;
     const nota = res.nota === null || res.notasDiss.some(v => v === null) ? "nota incompleta" : `nota ${numBR(res.nota)}`;
-    aviso(`${res.nome || "Aluno não identificado"} · ${nota} · ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+    aviso(`${res.nome || "Aluno não identificado"} · ${nota}` + (res.conferir.length ? " · conferir" : " · confira e guarde"), res.conferir.length ? "alerta" : "");
     // guarda sozinho quando não há nada a conferir (se a opção estiver ligada)
     if (el("vivo-auto").checked && !res.conferir.length && res.nome) {
       const ja = (await folhasDa(pacote.hash)).some(f => Identificacao.normalizarNome(f.nome) === Identificacao.normalizarNome(res.nome));
@@ -95,11 +94,9 @@ const AoVivo = (() => {
   async function guardar_() {
     if (!atual) return;
     const nome = atual.nome;
-    const antes = (await folhasDa(pacote.hash)).length;
-    await salvarAtual();
-    const depois = (await folhasDa(pacote.hash)).length;
-    if (depois === antes) return;   // guardar cancelado (aluno repetido): continua no resultado
-    aviso(`Guardada${nome ? ": " + nome : ""}. Aponte para a próxima folha.`);
+    const substitui = !!atual.anterior;
+    if (!(await salvarAtual())) return;
+    aviso(`${substitui ? "Substituída" : "Guardada"}${nome ? ": " + nome : ""}. Aponte para a próxima folha.`, "ok");
     proxima(true);
   }
 
@@ -165,7 +162,7 @@ const AoVivo = (() => {
       laco();
     } catch (e) {
       aviso(e.name === "NotAllowedError"
-        ? "Sem permissão para a câmera. Libere em Ajustes > Safari > Câmera, ou use o botão Fotografar."
+        ? "Sem permissão para a câmera. Libere em Ajustes > Apps > Safari > Câmera, ou feche e use Fotografar ou escolher imagem."
         : "Não consegui abrir a câmera: " + e.message);
     }
   }
@@ -176,8 +173,8 @@ const AoVivo = (() => {
     fluxo = null;
     el("vivo").hidden = true;
     document.body.classList.remove("vivo-aberto");
-    el("passo-foto").after(el("passo-resultado"));
-    if (atual) { el("passo-resultado").hidden = false; }
+    el("conferencia-corpo").appendChild(el("passo-resultado"));
+    if (atual) { el("passo-resultado").hidden = false; irPara("conferencia"); }
     listar();
   }
 
@@ -188,7 +185,7 @@ const AoVivo = (() => {
     el("guardar").onclick = () => rodando ? guardar_() : guardarOriginal();
     el("descartar").onclick = () => {
       if (!rodando) return descartarOriginal();
-      aviso("Descartada. Aponte para a próxima folha.");
+      aviso(atual && atual.anterior ? "Mantida a folha anterior. Aponte para a próxima." : "Não guardada. Aponte para a próxima folha.");
       proxima(true);
     };
     el("vivo-de-novo").onclick = () => { aviso("Lendo de novo…"); proxima(false); };
