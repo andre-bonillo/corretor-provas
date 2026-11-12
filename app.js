@@ -528,7 +528,10 @@ async function removerProva() {
 
 function textoRico(t) {
   const e = String(t || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-  return e.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|\W)_(.+?)_(?=\W|$)/g, "$1<i>$2</i>").replace(/\n/g, "<br>");
+  return e.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+    .replace(/(^|\W)_(.+?)_(?=\W|$)/g, "$1<i>$2</i>")
+    .replace(/(^|[^\w*])\*([^\s*](?:[^*]*?[^\s*])?)\*(?![\w*])/g, "$1<i>$2</i>")
+    .replace(/\n/g, "<br>");
 }
 
 function htmlQuestao(q) {
