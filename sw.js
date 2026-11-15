@@ -1,6 +1,6 @@
 // Guarda a página e os modelos no aparelho, para funcionar sem internet.
-const VERSAO = "corretor-v5";
-const ARQUIVOS = ["./", "index.html", "app.js", "leitura.js", "identificacao.js", "ao_vivo.js", "onedrive.js", "nuvem.js", "manifest.webmanifest", "icone.png",
+const VERSAO = "corretor-v6";
+const ARQUIVOS = ["./", "index.html", "app.js", "leitura.js", "identificacao.js", "ao_vivo.js", "onedrive.js", "nuvem.js", "github.js", "manifest.webmanifest", "icone.png",
   "vendor/ort.wasm.min.js", "vendor/ort-wasm-simd-threaded.mjs", "vendor/ort-wasm-simd-threaded.wasm",
   "modelos/mnist-12.onnx", "modelos/latin_PP-OCRv5_rec_mobile.onnx", "modelos/ppocrv5_latin_dict.txt"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS.map((u) => new Request(u, { cache: "reload" }))))); self.skipWaiting(); });

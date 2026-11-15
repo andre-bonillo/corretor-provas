@@ -549,6 +549,16 @@
       <div class="od-linha"><span id="od-quem" class="od-quem">OneDrive não conectado</span><button id="od-conectar" class="mini">Conectar ao OneDrive</button></div>
       <button id="od-atualizar" class="botao sec" hidden>Atualizar provas do OneDrive</button>
     </div>
+    <!-- provas automáticas: repositório privado no GitHub (github.js) -->
+    <div id="gh-cartao" class="cartao od">
+      <div class="od-linha"><span id="gh-quem" class="od-quem">Provas automáticas desligadas</span>
+        <span><button id="gh-buscar" class="mini" hidden>Buscar agora</button> <button id="gh-ligar" class="mini">Ligar</button></span></div>
+      <div id="gh-campo" hidden>
+        <div class="campo" style="margin-top:10px"><label for="gh-chave">Chave de acesso do GitHub (fica só neste aparelho)</label>
+          <input id="gh-chave" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_…"></div>
+        <button id="gh-salvar" class="botao">Salvar e buscar as provas</button>
+      </div>
+    </div>
     <div class="segmentos" id="modo-provas">
       <button data-modo="lista" class="ativo">Provas</button>
       <button data-modo="disciplinas">Disciplinas</button>
@@ -563,7 +573,7 @@
     <div id="vista-calendario" hidden></div>
     <div id="provas-vazio" class="vazio" hidden>
       <b>Nenhuma prova neste aparelho</b>
-      Toque em <i>Abrir arquivo da prova</i> e escolha, no OneDrive, o arquivo “… - Celular (….json” que o gerador grava. Dá para escolher vários de uma vez.
+      Ligue as <i>provas automáticas</i> (acima) para recebê-las sozinhas, ou toque em <i>Abrir arquivo da prova</i> e escolha, no OneDrive, o arquivo “… - Celular (….json” que o gerador grava. Dá para escolher vários de uma vez.
     </div>
   </main>
   <button id="aparencia" class="link aparencia">Aparência</button>
@@ -712,5 +722,6 @@
 <script src="ao_vivo.js"></script>
 <script src="onedrive.js"></script>
 <script src="nuvem.js"></script>
+<script src="github.js"></script>
 </body>
 </html>
