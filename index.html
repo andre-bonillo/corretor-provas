@@ -555,7 +555,7 @@
   .nav-flutuante { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 14px); z-index: 20; gap: 4px;
                    padding: 6px; border-radius: 30px; background: color-mix(in srgb, var(--cartao) 88%, transparent);
                    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 6px 24px rgba(0,0,0,.18); }
-  .nav-flutuante button { width: 52px; height: 48px; border: 0; border-radius: 24px; display: grid; place-items: center; background: none; color: var(--texto); cursor: pointer; }
+  .nav-flutuante button { width: 48px; height: 48px; border: 0; border-radius: 24px; display: grid; place-items: center; background: none; color: var(--texto); cursor: pointer; }
   .nav-flutuante button.ativo { background: var(--destaque); color: #fff; }
   .nav-flutuante .sep { width: 1px; background: var(--borda); margin: 8px 2px; }
   .nav-icones { position: absolute; gap: 8px; right: calc(env(safe-area-inset-right) + 12px); top: calc(50% + env(safe-area-inset-top) / 2); transform: translateY(-50%); }
@@ -578,6 +578,32 @@
   .op-item + .op-item { border-top: 1px solid var(--linha); }
   .op-item svg { color: var(--destaque); flex: none; }
   .op-ic { display: grid; place-items: center; flex: none; color: var(--destaque); }
+  /* Início (inicio.js): resumo de provas, disciplinas e calendário */
+  .ini-topo { margin: 2px 0 12px; }
+  .ini-hoje { font-size: 15px; font-weight: 600; margin: 0 4px 10px; }
+  [data-tema="vidro"] .ini-hoje { color: #fff; }
+  .ini-numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .ini-numeros > * { background: var(--cartao); border: var(--cartao-borda); border-radius: var(--raio); box-shadow: var(--sombra); padding: 10px 4px;
+                     text-align: center; color: var(--texto); font: inherit; }
+  [data-tema="vidro"] .ini-numeros > * { background: var(--vidro-painel, var(--cartao)); }
+  .ini-numeros button { cursor: pointer; }
+  .ini-numeros b { display: block; font-size: 22px; line-height: 1.1; }
+  .ini-numeros small { display: block; font-size: 11px; color: var(--fraco); margin-top: 2px; }
+  .ini-cartao .titulo-linha { margin-bottom: 4px; }
+  .ini-linha { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 2px; border: 0; background: none; color: var(--texto);
+               font: inherit; text-align: left; cursor: pointer; }
+  .ini-linha + .ini-linha { border-top: 1px solid var(--linha); }
+  .ini-data { flex: none; width: 44px; height: 46px; border-radius: 10px; background: var(--azul-claro); color: var(--destaque);
+              display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+  .ini-data b { font-size: 18px; } .ini-data small { font-size: 11px; text-transform: uppercase; margin-top: 2px; }
+  .ini-meio { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ini-nome { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ini-meio small { color: var(--fraco); font-size: 12.5px; }
+  .ini-dir { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 13px; color: var(--fraco); }
+  .ini-conta b { color: var(--texto); font-size: 15px; }
+  .ini-prog { display: block; margin-top: 4px; }
+  .ini-capa { width: 44px !important; height: 44px !important; flex: none; }
+  .ini-vazio { color: var(--fraco); font-size: 14px; padding: 8px 2px; }
   /* estilo dos ícones (Ajustes › Ícones): blocos coloridos com o desenho em branco */
   .bloco-ic { display: grid; place-items: center; flex: none; border-radius: 8px; color: #fff; }
   .bloco-ic svg { color: #fff !important; }
@@ -627,7 +653,8 @@
       <button id="od-atualizar" class="botao sec" hidden>Atualizar provas do OneDrive</button>
     </div>
     <div class="segmentos" id="modo-provas">
-      <button data-modo="lista" class="ativo">Provas</button>
+      <button data-modo="inicio" class="ativo">Início</button>
+      <button data-modo="lista">Provas</button>
       <button data-modo="disciplinas">Disciplinas</button>
       <button data-modo="calendario">Calendário</button>
     </div>
@@ -635,7 +662,8 @@
       <div class="fichas" id="filtro-inst"></div>
       <select id="filtro-disc" aria-label="Disciplina"></select>
     </div>
-    <div id="vista-lista"><ul id="provas" class="lista-provas"></ul></div>
+    <div id="vista-inicio"></div>
+    <div id="vista-lista" hidden><ul id="provas" class="lista-provas"></ul></div>
     <div id="vista-disciplinas" hidden></div>
     <div id="vista-calendario" hidden></div>
     <div id="provas-vazio" class="vazio" hidden>
@@ -823,6 +851,7 @@
 <script src="onedrive.js"></script>
 <script src="nuvem.js"></script>
 <script src="github.js"></script>
+<script src="inicio.js"></script>
 <script src="navegacao.js"></script>
 </body>
 </html>

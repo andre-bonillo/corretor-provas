@@ -204,7 +204,7 @@ function htmlCapa(p, classe = "capa") {
   return `<div class="${classe}" style="--h:${h}"><span>${esc(i.sigla || i.disciplina.slice(0, 3))}</span><small>${esc(i.rotulo)}</small></div>`;
 }
 
-let modoProvas = "lista", filtro = { inst: "", disc: "" }, mesCal = null, diaSel = "";
+let modoProvas = "inicio", filtro = { inst: "", disc: "" }, mesCal = null, diaSel = "";
 let dadosLista = null;   // { ps, porHash, pendentes }
 
 async function carregarLista() {
@@ -265,10 +265,12 @@ function desenharProvas() {
   if (!dadosLista) return;
   desenharFiltros();
   for (const b of document.querySelectorAll("#modo-provas button")) b.classList.toggle("ativo", b.dataset.modo === modoProvas);
-  for (const m of ["lista", "disciplinas", "calendario"]) $("#vista-" + m).hidden = m !== modoProvas;
+  for (const m of ["inicio", "lista", "disciplinas", "calendario"]) $("#vista-" + m).hidden = m !== modoProvas;
+  if (modoProvas === "inicio") $("#filtros").hidden = true;          // o resumo mostra tudo, sem filtro
   $("#provas-vazio").hidden = dadosLista.ps.length > 0;
   const ps = provasFiltradas();
-  if (modoProvas === "lista") desenharLista(ps);
+  if (modoProvas === "inicio") desenharInicio();
+  else if (modoProvas === "lista") desenharLista(ps);
   else if (modoProvas === "disciplinas") desenharDisciplinas(ps);
   else desenharCalendario(ps);
 }
@@ -1038,7 +1040,7 @@ window.addEventListener("load", async () => {
   for (const b of document.querySelectorAll(".segmentos button[data-aba]")) b.onclick = () => aba(b.dataset.aba);
   for (const b of document.querySelectorAll("#modo-provas button")) b.onclick = () => { modoProvas = b.dataset.modo; diaSel = ""; salvarFiltro(); desenharProvas(); window.scrollTo(0, 0); if (window.Navegacao) Navegacao.marcar(); };
   const fl = await ler("config", "filtro").catch(() => null);
-  if (fl) { filtro = { inst: fl.inst || "", disc: fl.disc || "" }; modoProvas = fl.modo || "lista"; }
+  if (fl) { filtro = { inst: fl.inst || "", disc: fl.disc || "" }; modoProvas = "inicio"; }   // o app sempre abre no Início (os filtros ficam)
   $("#prova-data-campo").onchange = async (e) => {
     if (e.target.value) await guardar("config", e.target.value, "data:" + pacote.hash); else await apagar("config", "data:" + pacote.hash);
     if (e.target.value) datasMarcadas[pacote.hash] = e.target.value; else delete datasMarcadas[pacote.hash];

@@ -1,6 +1,6 @@
 // Navegação da tela inicial, em quatro formatos escolhidos em Ajustes › Exibição do menu
 // (a escolha fica no aparelho; ?nav=… na URL só mostra a prévia):
-//   abas       barra de abas embaixo: Provas, Disciplinas, Calendário, Ajustes
+//   abas       barra de abas embaixo: Início, Provas, Disciplinas, Calendário, Ajustes
 //   lateral    menu lateral à esquerda (como no Word para iPad): fixo em telas largas (iPad deitado),
 //              gaveta pelo botão ☰ no iPhone e no iPad em pé
 //   icones     ícones no cabeçalho: sincronizar e "⋯" (opções por baixo); Provas/Disciplinas/Calendário no alto
@@ -29,6 +29,7 @@
     return `<path d="M${pts.map(([x, y]) => x.toFixed(2) + " " + y.toFixed(2)).join("L")}Z"/><circle cx="12" cy="12" r="3"/>`;
   })();
   const ic = {
+    inicio: '<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
     lista: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
     disciplinas: '<path d="M4 7l8-4 8 4-8 4z"/><path d="M4 12l8 4 8-4M4 17l8 4 8-4"/>',
     calendario: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
@@ -40,9 +41,9 @@
     sinc: '<path d="M20 11a8 8 0 00-14.5-4.5L4 8M4 13a8 8 0 0014.5 4.5L20 16"/><path d="M4 4v4h4M20 20v-4h-4"/>',
     mais: '<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>',
   };
-  const CORES = { lista: "#2f7bf6", disciplinas: "#8e5cf0", calendario: "#ef4b4b", abrir: "#21a366", ajustes: "#7a8590",
+  const CORES = { inicio: "#4f5bd5", lista: "#2f7bf6", disciplinas: "#8e5cf0", calendario: "#ef4b4b", abrir: "#21a366", ajustes: "#7a8590",
                   aparencia: "#f59e0b", exibicao: "#14a3b8", icones: "#e5508f" };
-  const ROTULOS = { lista: "Provas", disciplinas: "Disciplinas", calendario: "Calendário", ajustes: "Ajustes" };
+  const ROTULOS = { inicio: "Início", lista: "Provas", disciplinas: "Disciplinas", calendario: "Calendário", ajustes: "Ajustes" };
 
   const lerPrevia = (k, validos) => { const v = new URLSearchParams(location.search).get(k); return validos.includes(v) ? v : null; };
   let previa = lerPrevia("nav", FORMATOS), previaIc = lerPrevia("icones", Object.keys(ESTILOS));
@@ -118,9 +119,9 @@
 
   // --------------------------------------------------------------- montagem
   function desenhar() {
-    $("#nav-abas").innerHTML = ["lista", "disciplinas", "calendario", "ajustes"].map(m =>
+    $("#nav-abas").innerHTML = ["inicio", "lista", "disciplinas", "calendario", "ajustes"].map(m =>
       `<button type="button" data-nav-modo="${m}">${icone(m, lerEstilo() === "blocos" ? 22 : 26)}<span>${ROTULOS[m]}</span></button>`).join("");
-    $("#nav-flutuante").innerHTML = ["lista", "disciplinas", "calendario"].map(m =>
+    $("#nav-flutuante").innerHTML = ["inicio", "lista", "disciplinas", "calendario"].map(m =>
       `<button type="button" data-nav-modo="${m}" aria-label="${ROTULOS[m]}" title="${ROTULOS[m]}">${icone(m, lerEstilo() === "blocos" ? 20 : 24)}</button>`).join("") +
       `<span class="sep"></span>` +
       `<button type="button" data-acao="abrir" aria-label="Abrir arquivo da prova" title="Abrir arquivo da prova">${icone("abrir", lerEstilo() === "blocos" ? 20 : 24)}</button>` +
@@ -129,7 +130,7 @@
       `<button type="button" data-acao="sinc" aria-label="Sincronizar agora" title="Sincronizar agora">${svg("sinc", 22)}</button>` +
       `<button type="button" data-acao="opcoes" aria-label="Opções" title="Opções">${svg("mais", 22)}</button>`;
     $("#nav-lateral").innerHTML = `<div class="titulo">Corretor</div>` +
-      ["lista", "disciplinas", "calendario"].map(m => `<button type="button" data-nav-modo="${m}">${icone(m)}${ROTULOS[m]}</button>`).join("") +
+      ["inicio", "lista", "disciplinas", "calendario"].map(m => `<button type="button" data-nav-modo="${m}">${icone(m)}${ROTULOS[m]}</button>`).join("") +
       `<div class="sep"></div>` +
       `<button type="button" data-acao="abrir">${icone("abrir")}Abrir arquivo da prova</button>` +
       `<button type="button" class="pe" data-nav-modo="ajustes">${icone("ajustes")}Ajustes</button>`;   // no pé, como as Opções do Word
