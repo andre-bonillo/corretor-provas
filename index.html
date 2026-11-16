@@ -578,14 +578,43 @@
   .op-item + .op-item { border-top: 1px solid var(--linha); }
   .op-item svg { color: var(--destaque); flex: none; }
   .op-item small { display: block; color: var(--fraco); font-size: 13px; }
-  #nav-escolha button { white-space: normal; line-height: 1.15; min-height: 40px; }
+  /* E · menu lateral: fixo à esquerda em telas largas (iPad); gaveta pelo botão ☰ no iPhone */
+  .nav-lateral, .nav-gaveta-botao, #nav-lateral-fundo { display: none; }
+  body[data-nav="lateral"] #modo-provas { display: none !important; }
+  body[data-nav="lateral"] #tela-ajustes .voltar { display: none; }
+  .nav-lateral { position: fixed; top: 0; bottom: 0; left: 0; z-index: 35; width: 272px; max-width: 82vw; flex-direction: column; gap: 2px;
+                 padding: calc(env(safe-area-inset-top) + 18px) 12px calc(env(safe-area-inset-bottom) + 16px) calc(env(safe-area-inset-left) + 12px);
+                 background: var(--cartao); color: var(--texto); border-right: 1px solid var(--borda); overflow-y: auto; }
+  [data-tema="vidro"] .nav-lateral { background: var(--vidro-painel); }
+  .nav-lateral .titulo { font-size: 22px; font-weight: 700; margin: 4px 10px 14px; font-family: var(--fonte-titulo); }
+  .nav-lateral button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 46px; padding: 8px 12px; border: 0; border-radius: 12px;
+                        background: none; color: var(--texto); font-size: 16px; text-align: left; cursor: pointer; }
+  .nav-lateral button svg { color: var(--destaque); flex: none; }
+  .nav-lateral button.ativo { background: color-mix(in srgb, var(--destaque) 16%, transparent); color: var(--destaque); font-weight: 600; }
+  .nav-lateral .sep { height: 1px; background: var(--linha); margin: 10px 8px; }
+  .nav-lateral button.pe { margin-top: auto; }
+  .nav-lateral .rotulo { margin: 4px 12px 2px; }
+  .nav-gaveta-botao { position: absolute; left: calc(env(safe-area-inset-left) + 10px); top: calc(50% + env(safe-area-inset-top) / 2); transform: translateY(-50%);
+                      width: 44px; height: 44px; border-radius: 22px; border: 0; place-items: center; cursor: pointer;
+                      background: color-mix(in srgb, var(--barra-texto) 14%, transparent); color: var(--barra-texto); }
+  #nav-lateral-fundo { position: fixed; inset: 0; z-index: 34; background: rgba(0,0,0,.35); }
+  @media (max-width: 899px) {             /* iPhone e iPad em pé: gaveta */
+    body[data-nav="lateral"][data-tela="provas"] .nav-gaveta-botao, body[data-nav="lateral"][data-tela="ajustes"] .nav-gaveta-botao { display: grid; }
+    body[data-nav="lateral"] #tela-provas .barra, body[data-nav="lateral"] #tela-ajustes .barra { padding-left: calc(env(safe-area-inset-left) + 66px); }
+    body[data-nav="lateral"].gaveta-aberta:is([data-tela="provas"], [data-tela="ajustes"]) .nav-lateral { display: flex; box-shadow: 4px 0 24px rgba(0,0,0,.25); }
+    body[data-nav="lateral"].gaveta-aberta:is([data-tela="provas"], [data-tela="ajustes"]) #nav-lateral-fundo { display: block; }
+  }
+  @media (min-width: 900px) {             /* iPad deitado e telas largas: barra lateral fixa, como no Word */
+    body[data-nav="lateral"][data-tela="provas"] .nav-lateral, body[data-nav="lateral"][data-tela="ajustes"] .nav-lateral { display: flex; }
+    body[data-nav="lateral"][data-tela="provas"] .tela, body[data-nav="lateral"][data-tela="ajustes"] .tela { padding-left: 272px; }
+  }
 </style>
 </head>
 <body data-tela="provas" data-nav="abas">
 
 <!-- 1. Lista das provas guardadas no aparelho -->
 <section id="tela-provas" class="tela">
-  <header class="barra"><h1>Corretor de provas</h1><div class="sub" id="provas-sub">Provas guardadas neste aparelho</div><div id="nav-icones" class="nav-icones"></div></header>
+  <header class="barra"><button class="nav-gaveta-botao" type="button" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>Corretor de provas</h1><div class="sub" id="provas-sub">Provas guardadas neste aparelho</div><div id="nav-icones" class="nav-icones"></div></header>
   <main>
     <!-- lugar previsto para a conexão com o OneDrive (onedrive.js, integrado depois) -->
     <div id="od-cartao" class="cartao od" hidden>
@@ -613,10 +642,14 @@
 
 <!-- 1b. Ajustes: sincronização, abrir arquivo, aparência, exibição do menu (navegacao.js) -->
 <section id="tela-ajustes" class="tela" hidden>
-  <header class="barra"><button class="voltar" data-ir="provas">Provas</button><h1>Ajustes</h1><div class="sub">Deste aparelho</div></header>
+  <header class="barra"><button class="nav-gaveta-botao" type="button" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button class="voltar" data-ir="provas">Provas</button><h1>Ajustes</h1><div class="sub">Deste aparelho</div></header>
   <main>
    <div id="opcoes">
     <div class="opcoes-topo"><b>Ajustes</b><button id="opcoes-fechar" class="mini" type="button">Fechar</button></div>
+    <span class="rotulo op-rotulo">Provas</span>
+    <div class="itens">
+      <label class="op-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h6l2 2h8v10H4z"/><path d="M12 12v5M9.5 14.5L12 12l2.5 2.5"/></svg><span>Abrir arquivo da prova<small>Escolher no app Arquivos (“… - Celular (….json”)</small></span><input id="abrir" type="file" accept=".json,application/json" multiple></label>
+    </div>
     <span class="rotulo op-rotulo">Sincronização</span>
     <!-- provas automáticas: repositório privado no GitHub (github.js) -->
     <div id="gh-cartao" class="cartao od">
@@ -628,21 +661,18 @@
         <button id="gh-salvar" class="botao">Salvar e buscar as provas</button>
       </div>
     </div>
+    <span class="rotulo op-rotulo">Aparência e menu</span>
     <div class="itens">
-      <label class="op-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h6l2 2h8v10H4z"/><path d="M12 12v5M9.5 14.5L12 12l2.5 2.5"/></svg><span>Abrir arquivo da prova<small>Escolher no app Arquivos (“… - Celular (….json”)</small></span><input id="abrir" type="file" accept=".json,application/json" multiple></label>
       <button id="aparencia" class="op-item" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg><span>Aparência<small>Cores e estilo da página</small></span></button>
-    </div>
-    <span class="rotulo op-rotulo">Exibição do menu</span>
-    <div class="segmentos" id="nav-escolha">
-      <button type="button" data-formato="abas">Abas embaixo</button>
-      <button type="button" data-formato="icones">Ícones no alto</button>
-      <button type="button" data-formato="flutuante">Barra flutuante</button>
+      <button id="exibicao" class="op-item" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg><span>Exibição do menu<small id="exibicao-atual">Abas embaixo</small></span></button>
     </div>
    </div>
   </main>
 </section>
 <nav id="nav-abas" class="nav-abas" aria-label="Menu"></nav>
 <nav id="nav-flutuante" class="nav-flutuante" aria-label="Menu"></nav>
+<aside id="nav-lateral" class="nav-lateral" aria-label="Menu"></aside>
+<div id="nav-lateral-fundo"></div>
 <div id="opcoes-folha" hidden><div class="caixa"></div></div>
 
 

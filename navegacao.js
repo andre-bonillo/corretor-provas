@@ -1,14 +1,19 @@
-// Navegação da tela inicial, em três formatos escolhidos em Ajustes › Exibição do menu
-// (a escolha fica no aparelho):
-//   abas       A · barra de abas embaixo: Provas, Disciplinas, Calendário, Ajustes
-//   icones     B · ícones no cabeçalho: sincronizar e "⋯" (opções por baixo); Provas/Disciplinas/Calendário no alto
-//   flutuante  D · cápsula flutuante embaixo: Provas, Disciplinas, Calendário, Abrir arquivo, Ajustes
-// As opções (sincronização, abrir arquivo, aparência, exibição) ficam em #opcoes: na tela Ajustes (A)
-// ou numa folha que sobe de baixo (B e D).
+// Navegação da tela inicial, em quatro formatos escolhidos em Ajustes › Exibição do menu
+// (a escolha fica no aparelho; ?nav=… na URL só mostra a prévia):
+//   abas       barra de abas embaixo: Provas, Disciplinas, Calendário, Ajustes
+//   lateral    menu lateral à esquerda (como no Word para iPad): fixo em telas largas (iPad deitado),
+//              gaveta pelo botão ☰ no iPhone e no iPad em pé
+//   icones     ícones no cabeçalho: sincronizar e "⋯" (opções por baixo); Provas/Disciplinas/Calendário no alto
+//   flutuante  cápsula flutuante embaixo: Provas, Disciplinas, Calendário, Abrir arquivo, Ajustes
+// As opções (abrir arquivo, sincronização, aparência, exibição) ficam em #opcoes: na tela Ajustes
+// (abas e lateral) ou numa folha que sobe de baixo (ícones e flutuante).
 "use strict";
 
 (() => {
-  const CHAVE = "corretor-nav", FORMATOS = ["abas", "icones", "flutuante"];
+  const CHAVE = "corretor-nav";
+  const NOMES = { abas: "Abas embaixo", lateral: "Menu lateral", icones: "Ícones no alto", flutuante: "Barra flutuante" };
+  const FORMATOS = Object.keys(NOMES);
+  const COM_TELA_AJUSTES = ["abas", "lateral"];
   const $ = (s) => document.querySelector(s);
   const ic = {
     lista: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
@@ -20,28 +25,30 @@
     mais: '<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>',
   };
   const svg = (n, t = 24) => `<svg width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic[n]}</svg>`;
+  const ROTULOS = { lista: "Provas", disciplinas: "Disciplinas", calendario: "Calendário", ajustes: "Ajustes" };
 
-  let previa = new URLSearchParams(location.search).get("nav");     // ?nav=… só mostra a prévia, sem gravar
+  let previa = new URLSearchParams(location.search).get("nav");
   if (!FORMATOS.includes(previa)) previa = null;
   const lerFormato = () => { if (previa) return previa; try { const f = localStorage.getItem(CHAVE); return FORMATOS.includes(f) ? f : "abas"; } catch (e) { return "abas"; } };
   const gravarFormato = (f) => { previa = null; try { localStorage.setItem(CHAVE, f); } catch (e) {} };
 
   // --------------------------------------------------------------- opções (Ajustes)
-  const casaOpcoes = () => $("#tela-ajustes main");
   function abrirOpcoes() {
-    if (lerFormato() === "abas") { irPara("ajustes"); return; }
+    if (COM_TELA_AJUSTES.includes(lerFormato())) { irPara("ajustes"); return; }
     const folha = $("#opcoes-folha");
     folha.querySelector(".caixa").appendChild($("#opcoes"));
     folha.hidden = false;
   }
+  // fecha o que estiver aberto por cima (folha de opções, gaveta do menu lateral)
   function fecharOpcoes() {
+    document.body.classList.remove("gaveta-aberta");
     const folha = $("#opcoes-folha");
     if (folha.hidden) return;
     folha.hidden = true;
-    casaOpcoes().appendChild($("#opcoes"));
+    $("#tela-ajustes main").appendChild($("#opcoes"));
   }
 
-  // --------------------------------------------------------------- modos Provas/Disciplinas/Calendário
+  // --------------------------------------------------------------- Provas/Disciplinas/Calendário
   function irModo(modo) {
     fecharOpcoes();
     if (document.body.dataset.tela !== "provas") irPara("provas");
@@ -55,39 +62,51 @@
       b.classList.toggle("ativo", naAjustes ? b.dataset.navModo === "ajustes" : b.dataset.navModo === modoProvas);
   }
 
+  async function escolherExibicao() {
+    const atual = lerFormato();
+    const r = await perguntar("Exibição do menu", "Como o menu aparece neste aparelho. O menu lateral fica fixo à esquerda no iPad deitado; no iPhone, abre pelo botão ☰.",
+      FORMATOS.map(f => ({ rotulo: (f === atual ? "✓ " : "") + NOMES[f], valor: f })));
+    if (!r || r === atual) return;
+    gravarFormato(r);
+    fecharOpcoes();
+    aplicar();
+    if (COM_TELA_AJUSTES.includes(r)) irPara("ajustes");
+    status("Menu: " + NOMES[r].toLowerCase() + ".", false, "ok");
+  }
+
   // --------------------------------------------------------------- montagem
   function montar() {
-    const abas = $("#nav-abas"), flut = $("#nav-flutuante"), icones = $("#nav-icones");
-    const rotulos = { lista: "Provas", disciplinas: "Disciplinas", calendario: "Calendário", ajustes: "Ajustes" };
-    abas.innerHTML = ["lista", "disciplinas", "calendario", "ajustes"].map(m =>
-      `<button type="button" data-nav-modo="${m}">${svg(m, 26)}<span>${rotulos[m]}</span></button>`).join("");
-    flut.innerHTML = ["lista", "disciplinas", "calendario"].map(m =>
-      `<button type="button" data-nav-modo="${m}" aria-label="${rotulos[m]}" title="${rotulos[m]}">${svg(m)}</button>`).join("") +
+    $("#nav-abas").innerHTML = ["lista", "disciplinas", "calendario", "ajustes"].map(m =>
+      `<button type="button" data-nav-modo="${m}">${svg(m, 26)}<span>${ROTULOS[m]}</span></button>`).join("");
+    $("#nav-flutuante").innerHTML = ["lista", "disciplinas", "calendario"].map(m =>
+      `<button type="button" data-nav-modo="${m}" aria-label="${ROTULOS[m]}" title="${ROTULOS[m]}">${svg(m)}</button>`).join("") +
       `<span class="sep"></span>` +
       `<button type="button" data-acao="abrir" aria-label="Abrir arquivo da prova" title="Abrir arquivo da prova">${svg("abrir")}</button>` +
       `<button type="button" data-acao="opcoes" aria-label="Ajustes" title="Ajustes">${svg("ajustes")}</button>`;
-    icones.innerHTML =
+    $("#nav-icones").innerHTML =
       `<button type="button" data-acao="sinc" aria-label="Sincronizar agora" title="Sincronizar agora">${svg("sinc", 22)}</button>` +
       `<button type="button" data-acao="opcoes" aria-label="Opções" title="Opções">${svg("mais", 22)}</button>`;
+    $("#nav-lateral").innerHTML = `<div class="titulo">Corretor</div>` +
+      ["lista", "disciplinas", "calendario"].map(m => `<button type="button" data-nav-modo="${m}">${svg(m)}${ROTULOS[m]}</button>`).join("") +
+      `<div class="sep"></div>` +
+      `<button type="button" data-acao="abrir">${svg("abrir")}Abrir arquivo da prova</button>` +
+      `<button type="button" class="pe" data-nav-modo="ajustes">${svg("ajustes")}Ajustes</button>`;   // no pé, como as Opções do Word
+
     for (const b of document.querySelectorAll("[data-nav-modo]"))
       b.onclick = () => b.dataset.navModo === "ajustes" ? abrirOpcoes() : irModo(b.dataset.navModo);
     for (const b of document.querySelectorAll("[data-acao]")) b.onclick = () => {
       const a = b.dataset.acao;
       if (a === "opcoes") abrirOpcoes();
-      else if (a === "abrir") $("#abrir").click();
+      else if (a === "abrir") { fecharOpcoes(); $("#abrir").click(); }
       else if (a === "sinc") window.Sincronia && Sincronia.ligada() ? Sincronia.sincronizar(false) : abrirOpcoes();
     };
+    for (const b of document.querySelectorAll(".nav-gaveta-botao")) b.onclick = () => document.body.classList.toggle("gaveta-aberta");
+    $("#nav-lateral-fundo").onclick = fecharOpcoes;
     $("#opcoes-folha").onclick = (e) => { if (e.target.id === "opcoes-folha") fecharOpcoes(); };
     $("#opcoes-fechar").onclick = fecharOpcoes;
-    // escolha do formato
-    for (const b of document.querySelectorAll("#nav-escolha button")) b.onclick = () => {
-      gravarFormato(b.dataset.formato);
-      fecharOpcoes();
-      aplicar();
-      if (b.dataset.formato === "abas") irPara("ajustes");
-      status("Menu: " + b.textContent.trim().toLowerCase() + ".", false, "ok");
-    };
-    // no formato B, o estado da sincronização aparece sob o título
+    $("#exibicao").onclick = escolherExibicao;
+
+    // no formato "ícones no alto", o estado da sincronização aparece sob o título
     const quem = $("#gh-quem"), sub = $("#provas-sub");
     const copiar = () => { sub.textContent = lerFormato() === "icones" && window.Sincronia && Sincronia.ligada() ? quem.textContent : "Provas guardadas neste aparelho"; };
     new MutationObserver(copiar).observe(quem, { childList: true, characterData: true, subtree: true });
@@ -98,8 +117,8 @@
   function aplicar() {
     const f = lerFormato();
     document.body.dataset.nav = f;
-    if (f === "abas") fecharOpcoes();
-    for (const b of document.querySelectorAll("#nav-escolha button")) b.classList.toggle("ativo", b.dataset.formato === f);
+    if (COM_TELA_AJUSTES.includes(f)) fecharOpcoes();
+    $("#exibicao-atual").textContent = NOMES[f];
     window.dispatchEvent(new Event("nav-mudou"));
     marcar();
   }
