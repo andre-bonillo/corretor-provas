@@ -577,6 +577,11 @@
              color: var(--texto); font-size: 17px; text-align: left; cursor: pointer; }
   .op-item + .op-item { border-top: 1px solid var(--linha); }
   .op-item svg { color: var(--destaque); flex: none; }
+  .op-ic { display: grid; place-items: center; flex: none; color: var(--destaque); }
+  /* estilo dos ícones (Ajustes › Ícones): blocos coloridos com o desenho em branco */
+  .bloco-ic { display: grid; place-items: center; flex: none; border-radius: 8px; color: #fff; }
+  .bloco-ic svg { color: #fff !important; }
+  body[data-icones="blocos"] .nav-lateral button { min-height: 50px; }
   .op-item small { display: block; color: var(--fraco); font-size: 13px; }
   /* E · menu lateral: fixo à esquerda em telas largas (iPad); gaveta pelo botão ☰ no iPhone */
   .nav-lateral, .nav-gaveta-botao, #nav-lateral-fundo { display: none; }
@@ -648,7 +653,7 @@
     <div class="opcoes-topo"><b>Ajustes</b><button id="opcoes-fechar" class="mini" type="button">Fechar</button></div>
     <span class="rotulo op-rotulo">Provas</span>
     <div class="itens">
-      <label class="op-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h6l2 2h8v10H4z"/><path d="M12 12v5M9.5 14.5L12 12l2.5 2.5"/></svg><span>Abrir arquivo da prova<small>Escolher no app Arquivos (“… - Celular (….json”)</small></span><input id="abrir" type="file" accept=".json,application/json" multiple></label>
+      <label class="op-item"><span class="op-ic" data-ic="abrir"></span><span>Abrir arquivo da prova<small>Escolher no app Arquivos (“… - Celular (….json”)</small></span><input id="abrir" type="file" accept=".json,application/json" multiple></label>
     </div>
     <span class="rotulo op-rotulo">Sincronização</span>
     <!-- provas automáticas: repositório privado no GitHub (github.js) -->
@@ -663,8 +668,9 @@
     </div>
     <span class="rotulo op-rotulo">Aparência e menu</span>
     <div class="itens">
-      <button id="aparencia" class="op-item" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg><span>Aparência<small>Cores e estilo da página</small></span></button>
-      <button id="exibicao" class="op-item" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg><span>Exibição do menu<small id="exibicao-atual">Abas embaixo</small></span></button>
+      <button id="aparencia" class="op-item" type="button"><span class="op-ic" data-ic="aparencia"></span><span>Aparência<small>Cores e estilo da página</small></span></button>
+      <button id="exibicao" class="op-item" type="button"><span class="op-ic" data-ic="exibicao"></span><span>Exibição do menu<small id="exibicao-atual">Abas embaixo</small></span></button>
+      <button id="icones-estilo" class="op-item" type="button"><span class="op-ic" data-ic="icones"></span><span>Ícones<small id="icones-atual">Contorno</small></span></button>
     </div>
    </div>
   </main>
