@@ -697,10 +697,12 @@ function abrirFolha(f) {
     ${f.imagem ? `<div class="cartao"><span class="rotulo">Folha lida</span><img class="folha" alt="Folha lida" src="${f.imagem}"></div>` : ""}
     <p class="ajuda">Para corrigir esta folha, leia-a de novo: a nova leitura pode substituir esta.</p>`;
   $("#f-apagar").onclick = async () => {
-    const r = await perguntar("Apagar esta folha?", `${f.nome || "Folha sem nome"} · nota ${f.nota === null ? "–" : numBR(f.nota)}. A folha sai deste aparelho.`,
+    const r = await perguntar("Apagar esta folha?", `${f.nome || "Folha sem nome"} · nota ${f.nota === null ? "–" : numBR(f.nota)}. A folha sai deste aparelho` +
+      (window.Sincronia && Sincronia.ligada() ? " e dos outros aparelhos sincronizados." : "."),
       [{ rotulo: "Apagar folha", valor: true, classe: "perigo" }]);
     if (!r) return;
     await apagar("folhas", f.id);
+    window.dispatchEvent(new CustomEvent("folha-apagada", { detail: f }));   // sincronização (github.js)
     await listar();
     irPara("prova");
     status("Folha apagada.", false, "ok");
@@ -886,6 +888,7 @@ async function salvarAtual() {
   if (anteriores.length) folha.id = anteriores[0].id;   // substitui a anterior (mesmo registro)
   await guardar("folhas", folha);
   for (const f of anteriores.slice(1)) await apagar("folhas", f.id);   // repetidas antigas
+  window.dispatchEvent(new CustomEvent("folhas-mudaram"));              // sincronização (github.js)
   atual = null;
   $("#passo-resultado").hidden = true;
   await listar();
