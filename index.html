@@ -536,28 +536,61 @@
     #vivo-camera { flex: 0 0 56%; }
     #vivo-painel { padding-top: calc(env(safe-area-inset-top) + 14px); }
   }
+  /* navegação da tela inicial (navegacao.js): A abas, B ícones no alto, D barra flutuante */
+  .nav-abas, .nav-flutuante, .nav-icones { display: none; }
+  body[data-nav="abas"][data-tela="provas"] .nav-abas, body[data-nav="abas"][data-tela="ajustes"] .nav-abas { display: flex; }
+  body[data-nav="flutuante"][data-tela="provas"] .nav-flutuante { display: flex; }
+  body[data-nav="icones"] .nav-icones { display: flex; }
+  body[data-nav="abas"] #modo-provas, body[data-nav="flutuante"] #modo-provas { display: none !important; }
+  body[data-nav="abas"] #tela-provas main, body[data-nav="abas"] #tela-ajustes main { padding-bottom: calc(env(safe-area-inset-bottom) + 86px); }
+  body[data-nav="flutuante"] #tela-provas main { padding-bottom: calc(env(safe-area-inset-bottom) + 96px); }
+  body[data-nav="abas"] #tela-ajustes .voltar { display: none; }
+  .nav-abas { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; justify-content: space-around;
+              padding: 6px calc(env(safe-area-inset-right) + 4px) calc(env(safe-area-inset-bottom) + 6px) calc(env(safe-area-inset-left) + 4px);
+              background: color-mix(in srgb, var(--cartao) 92%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+              border-top: 1px solid var(--borda); }
+  .nav-abas button { flex: 1; max-width: 120px; min-height: 50px; border: 0; background: none; display: flex; flex-direction: column; align-items: center;
+                     gap: 2px; padding: 4px 0; font-size: 11px; color: var(--fraco); cursor: pointer; }
+  .nav-abas button.ativo { color: var(--destaque); }
+  .nav-flutuante { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 14px); z-index: 20; gap: 4px;
+                   padding: 6px; border-radius: 30px; background: color-mix(in srgb, var(--cartao) 88%, transparent);
+                   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+  .nav-flutuante button { width: 52px; height: 48px; border: 0; border-radius: 24px; display: grid; place-items: center; background: none; color: var(--texto); cursor: pointer; }
+  .nav-flutuante button.ativo { background: var(--destaque); color: #fff; }
+  .nav-flutuante .sep { width: 1px; background: var(--borda); margin: 8px 2px; }
+  .nav-icones { position: absolute; gap: 8px; right: calc(env(safe-area-inset-right) + 12px); top: calc(50% + env(safe-area-inset-top) / 2); transform: translateY(-50%); }
+  .nav-icones button { width: 44px; height: 44px; border-radius: 22px; border: 0; display: grid; place-items: center; cursor: pointer;
+                       background: color-mix(in srgb, var(--barra-texto) 14%, transparent); color: var(--barra-texto); }
+  body[data-nav="icones"] #tela-provas .barra { padding-right: calc(env(safe-area-inset-right) + 120px); }
+  #opcoes-folha { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.35); display: flex; align-items: flex-end; justify-content: center; }
+  #opcoes-folha[hidden] { display: none; }
+  #opcoes-folha .caixa { background: var(--cartao); color: var(--texto); width: 100%; max-width: 520px; max-height: 86vh; overflow-y: auto;
+                         border-radius: 18px 18px 0 0; padding: 14px 14px calc(env(safe-area-inset-bottom) + 18px); }
+  [data-tema="vidro"] #opcoes-folha .caixa { background: var(--vidro-painel); }
+  .opcoes-topo { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 6px; font-size: 18px; }
+  #tela-ajustes .opcoes-topo { display: none; }
+  .op-rotulo { display: block; margin: 12px 4px 6px; }
+  [data-tema="vidro"] .op-rotulo { color: #fff; opacity: .9; }
+  #opcoes-folha .op-rotulo { color: var(--fraco) !important; opacity: 1; }
+  #opcoes-folha .segmentos button:not(.ativo) { color: var(--texto) !important; }
+  .op-item { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 58px; padding: 10px 14px; border: 0; background: none;
+             color: var(--texto); font-size: 17px; text-align: left; cursor: pointer; }
+  .op-item + .op-item { border-top: 1px solid var(--linha); }
+  .op-item svg { color: var(--destaque); flex: none; }
+  .op-item small { display: block; color: var(--fraco); font-size: 13px; }
+  #nav-escolha button { white-space: normal; line-height: 1.15; min-height: 40px; }
 </style>
 </head>
-<body>
+<body data-tela="provas" data-nav="abas">
 
 <!-- 1. Lista das provas guardadas no aparelho -->
 <section id="tela-provas" class="tela">
-  <header class="barra"><h1>Corretor de provas</h1><div class="sub">Provas guardadas neste aparelho</div></header>
+  <header class="barra"><h1>Corretor de provas</h1><div class="sub" id="provas-sub">Provas guardadas neste aparelho</div><div id="nav-icones" class="nav-icones"></div></header>
   <main>
     <!-- lugar previsto para a conexão com o OneDrive (onedrive.js, integrado depois) -->
     <div id="od-cartao" class="cartao od" hidden>
       <div class="od-linha"><span id="od-quem" class="od-quem">OneDrive não conectado</span><button id="od-conectar" class="mini">Conectar ao OneDrive</button></div>
       <button id="od-atualizar" class="botao sec" hidden>Atualizar provas do OneDrive</button>
-    </div>
-    <!-- provas automáticas: repositório privado no GitHub (github.js) -->
-    <div id="gh-cartao" class="cartao od">
-      <div class="od-linha"><span id="gh-quem" class="od-quem">Provas automáticas desligadas</span>
-        <span><button id="gh-buscar" class="mini" hidden>Buscar agora</button> <button id="gh-ligar" class="mini">Ligar</button></span></div>
-      <div id="gh-campo" hidden>
-        <div class="campo" style="margin-top:10px"><label for="gh-chave">Chave de acesso do GitHub (fica só neste aparelho)</label>
-          <input id="gh-chave" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_…"></div>
-        <button id="gh-salvar" class="botao">Salvar e buscar as provas</button>
-      </div>
     </div>
     <div class="segmentos" id="modo-provas">
       <button data-modo="lista" class="ativo">Provas</button>
@@ -573,14 +606,45 @@
     <div id="vista-calendario" hidden></div>
     <div id="provas-vazio" class="vazio" hidden>
       <b>Nenhuma prova neste aparelho</b>
-      Ligue as <i>provas automáticas</i> (acima) para recebê-las sozinhas, ou toque em <i>Abrir arquivo da prova</i> e escolha, no OneDrive, o arquivo “… - Celular (….json” que o gerador grava. Dá para escolher vários de uma vez.
+      Ligue a <i>sincronização</i> em <i>Ajustes</i> para recebê-las sozinhas, ou use <i>Abrir arquivo da prova</i>, também em <i>Ajustes</i>, e escolha, no OneDrive, o arquivo “… - Celular (….json” que o gerador grava. Dá para escolher vários de uma vez.
     </div>
   </main>
-  <button id="aparencia" class="link aparencia">Aparência</button>
-  <footer class="rodape">
-    <label class="botao">Abrir arquivo da prova<input id="abrir" type="file" accept=".json,application/json" multiple></label>
-  </footer>
 </section>
+
+<!-- 1b. Ajustes: sincronização, abrir arquivo, aparência, exibição do menu (navegacao.js) -->
+<section id="tela-ajustes" class="tela" hidden>
+  <header class="barra"><button class="voltar" data-ir="provas">Provas</button><h1>Ajustes</h1><div class="sub">Deste aparelho</div></header>
+  <main>
+   <div id="opcoes">
+    <div class="opcoes-topo"><b>Ajustes</b><button id="opcoes-fechar" class="mini" type="button">Fechar</button></div>
+    <span class="rotulo op-rotulo">Sincronização</span>
+    <!-- provas automáticas: repositório privado no GitHub (github.js) -->
+    <div id="gh-cartao" class="cartao od">
+      <div class="od-linha"><span id="gh-quem" class="od-quem">Provas automáticas desligadas</span>
+        <span><button id="gh-buscar" class="mini" hidden>Buscar agora</button> <button id="gh-ligar" class="mini">Ligar</button></span></div>
+      <div id="gh-campo" hidden>
+        <div class="campo" style="margin-top:10px"><label for="gh-chave">Chave de acesso do GitHub (fica só neste aparelho)</label>
+          <input id="gh-chave" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_…"></div>
+        <button id="gh-salvar" class="botao">Salvar e buscar as provas</button>
+      </div>
+    </div>
+    <div class="itens">
+      <label class="op-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h6l2 2h8v10H4z"/><path d="M12 12v5M9.5 14.5L12 12l2.5 2.5"/></svg><span>Abrir arquivo da prova<small>Escolher no app Arquivos (“… - Celular (….json”)</small></span><input id="abrir" type="file" accept=".json,application/json" multiple></label>
+      <button id="aparencia" class="op-item" type="button"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg><span>Aparência<small>Cores e estilo da página</small></span></button>
+    </div>
+    <span class="rotulo op-rotulo">Exibição do menu</span>
+    <div class="segmentos" id="nav-escolha">
+      <button type="button" data-formato="abas">Abas embaixo</button>
+      <button type="button" data-formato="icones">Ícones no alto</button>
+      <button type="button" data-formato="flutuante">Barra flutuante</button>
+    </div>
+   </div>
+  </main>
+</section>
+<nav id="nav-abas" class="nav-abas" aria-label="Menu"></nav>
+<nav id="nav-flutuante" class="nav-flutuante" aria-label="Menu"></nav>
+<div id="opcoes-folha" hidden><div class="caixa"></div></div>
+
 
 <!-- 2. Uma prova: progresso, folhas, faltam, notas -->
 <section id="tela-prova" class="tela" hidden>
@@ -723,5 +787,6 @@
 <script src="onedrive.js"></script>
 <script src="nuvem.js"></script>
 <script src="github.js"></script>
+<script src="navegacao.js"></script>
 </body>
 </html>

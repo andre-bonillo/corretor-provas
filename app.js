@@ -100,7 +100,7 @@ function miniatura(cv, largura = 700) {
 // Telas, avisos e perguntas
 // ---------------------------------------------------------------------------
 
-const TELAS = ["provas", "prova", "alunos", "questoes", "conferencia", "folha"];
+const TELAS = ["provas", "ajustes", "prova", "alunos", "questoes", "conferencia", "folha"];
 const todos = (loja) => tx(loja, "readonly", s => s.getAll());
 const nomeProva = (p) => p.nome.replace(" - Gabaritos", "");
 const vivoAberto = () => document.body.classList.contains("vivo-aberto");
@@ -110,6 +110,8 @@ const mesmoNome = (a, b) => !!a && !!b && Identificacao.normalizarNome(a) === Id
 
 function irPara(tela) {
   for (const t of TELAS) $("#tela-" + t).hidden = t !== tela;
+  document.body.dataset.tela = tela;                 // a barra de navegação aparece só nas telas iniciais
+  if (window.Navegacao) { Navegacao.fecharOpcoes(); Navegacao.marcar(); }
   window.scrollTo(0, 0);
   if (tela === "provas") listarProvas();
 }
@@ -1034,7 +1036,7 @@ window.addEventListener("load", async () => {
   $("#aviso button").onclick = () => { $("#aviso").hidden = true; };
   for (const b of document.querySelectorAll("[data-ir]")) b.onclick = () => irPara(b.dataset.ir);
   for (const b of document.querySelectorAll(".segmentos button[data-aba]")) b.onclick = () => aba(b.dataset.aba);
-  for (const b of document.querySelectorAll("#modo-provas button")) b.onclick = () => { modoProvas = b.dataset.modo; diaSel = ""; salvarFiltro(); desenharProvas(); window.scrollTo(0, 0); };
+  for (const b of document.querySelectorAll("#modo-provas button")) b.onclick = () => { modoProvas = b.dataset.modo; diaSel = ""; salvarFiltro(); desenharProvas(); window.scrollTo(0, 0); if (window.Navegacao) Navegacao.marcar(); };
   const fl = await ler("config", "filtro").catch(() => null);
   if (fl) { filtro = { inst: fl.inst || "", disc: fl.disc || "" }; modoProvas = fl.modo || "lista"; }
   $("#prova-data-campo").onchange = async (e) => {
