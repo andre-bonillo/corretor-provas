@@ -731,19 +731,55 @@ function prepararAluno(sel, outro, ra, nome, aoMudar) {
   outro.hidden = sel.value !== OUTRO_NOME;
   sel.onchange = () => {
     outro.hidden = sel.value !== OUTRO_NOME;
-    if (!outro.hidden) outro.focus();
+    if (!outro.hidden) outro.focus(); else sug.innerHTML = "";
     const a = (pacote.alunos || []).find(a => a.nome === sel.value);
     if (a) ra.value = a.ra;
     aoMudar && aoMudar();
   };
-  outro.oninput = () => aoMudar && aoMudar();
-  outro.onchange = () => {                       // nome digitado que está na lista: escolhe da lista
-    const n = nomes.find(n => mesmoNome(n, outro.value));
-    if (n) { sel.value = n; outro.hidden = true; outro.value = ""; sel.onchange(); }
+  // sugestões da turma enquanto digita ("ana" ou "ana sou" já acham Ana Maria Souza)
+  let sug = outro.nextElementSibling;
+  if (!sug || !sug.classList.contains("sugestoes")) {
+    sug = document.createElement("div"); sug.className = "sugestoes"; outro.after(sug);
+  }
+  const escolher = (n) => { sel.value = n; outro.value = ""; sug.innerHTML = ""; sel.onchange(); };
+  const sugerir = () => {
+    const achados = outro.hidden ? [] : nomesParecidos(outro.value);
+    sug.innerHTML = "";
+    for (const n of achados.slice(0, 6)) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "mini"; b.textContent = n;
+      b.onclick = () => escolher(n);
+      sug.appendChild(b);
+    }
+    if (achados.length > 6) sug.insertAdjacentHTML("beforeend", `<small>e mais ${achados.length - 6}: digite mais letras</small>`);
   };
+  outro.oninput = () => { sugerir(); aoMudar && aoMudar(); };
+  outro.onchange = () => {                       // um só aluno da turma combina: escolhe ele (nome completo)
+    const n = nomeDaTurma(outro.value);
+    if (n) escolher(n);
+  };
+  sugerir();
 }
 
-const nomeEscolhido = (sel, outro) => sel.value === OUTRO_NOME ? outro.value.trim().replace(/\s+/g, " ") : sel.value;
+// Alunos da turma cujo nome combina com o texto: cada palavra digitada é o começo de uma palavra do nome.
+function nomesParecidos(texto) {
+  const partes = Identificacao.normalizarNome(texto).split(" ").filter(Boolean);
+  if (!partes.length) return [];
+  return (pacote.nomes || []).filter(n => {
+    const pal = Identificacao.normalizarNome(n).split(" ");
+    return partes.every(p => pal.some(w => w.startsWith(p)));
+  });
+}
+
+// O nome completo da turma, se o texto digitado for dele (igual, ou o único que combina); senão, null.
+function nomeDaTurma(texto) {
+  const igual = (pacote.nomes || []).find(n => mesmoNome(n, texto));
+  if (igual) return igual;
+  const achados = nomesParecidos(texto);
+  return achados.length === 1 ? achados[0] : null;
+}
+
+const nomeEscolhido = (sel, outro) => sel.value !== OUTRO_NOME ? sel.value
+  : nomeDaTurma(outro.value) || outro.value.trim().replace(/\s+/g, " ");
 
 // Opções de cada questão (as bolinhas da folha)
 function opcoesDaQuestao(versao, n) {
