@@ -699,7 +699,9 @@ function abrirFolha(f) {
     ${resp ? `<div class="cartao"><span class="rotulo">Respostas</span><div class="grade">${resp}</div></div>` : ""}
     ${diss ? `<div class="cartao"><span class="rotulo">Dissertativas</span><div class="grade">${diss}</div></div>` : ""}
     ${f.imagem ? `<div class="cartao"><span class="rotulo">Folha lida</span><img class="folha" alt="Folha lida" src="${f.imagem}"></div>` : ""}
-    <p class="ajuda">Para corrigir esta folha, leia-a de novo: a nova leitura pode substituir esta.</p>`;
+    <p class="ajuda">Para mudar o aluno, uma resposta ou a nota de uma dissertativa, toque em <b style="display:inline">Editar</b>.</p>`;
+  $("#f-acoes-ver").hidden = false; $("#f-acoes-editar").hidden = true;
+  $("#f-editar").onclick = () => editarFolha(f);
   $("#f-apagar").onclick = async () => {
     const r = await perguntar("Apagar esta folha?", `${f.nome || "Folha sem nome"} · nota ${f.nota === null ? "–" : numBR(f.nota)}. A folha sai deste aparelho` +
       (window.Sincronia && Sincronia.ligada() ? " e dos outros aparelhos sincronizados." : "."),
@@ -712,6 +714,156 @@ function abrirFolha(f) {
     status("Folha apagada.", false, "ok");
   };
   irPara("folha");
+}
+
+// ---------------------------------------------------------------------------
+// Escolha do aluno: lista da turma ou nome digitado à mão (aluno fora da lista ou não reconhecido)
+// ---------------------------------------------------------------------------
+const OUTRO_NOME = "__outro__";
+
+function prepararAluno(sel, outro, ra, nome, aoMudar) {
+  const nomes = pacote.nomes || [];
+  sel.innerHTML = `<option value="">— não identificado —</option>` + nomes.map(n => `<option>${esc(n)}</option>`).join("") +
+    `<option value="${OUTRO_NOME}">Digitar outro nome…</option>`;
+  const daLista = nome ? nomes.find(n => mesmoNome(n, nome)) : "";
+  sel.value = !nome ? "" : daLista || OUTRO_NOME;
+  outro.value = nome && !daLista ? nome : "";
+  outro.hidden = sel.value !== OUTRO_NOME;
+  sel.onchange = () => {
+    outro.hidden = sel.value !== OUTRO_NOME;
+    if (!outro.hidden) outro.focus();
+    const a = (pacote.alunos || []).find(a => a.nome === sel.value);
+    if (a) ra.value = a.ra;
+    aoMudar && aoMudar();
+  };
+  outro.oninput = () => aoMudar && aoMudar();
+  outro.onchange = () => {                       // nome digitado que está na lista: escolhe da lista
+    const n = nomes.find(n => mesmoNome(n, outro.value));
+    if (n) { sel.value = n; outro.hidden = true; outro.value = ""; sel.onchange(); }
+  };
+}
+
+const nomeEscolhido = (sel, outro) => sel.value === OUTRO_NOME ? outro.value.trim().replace(/\s+/g, " ") : sel.value;
+
+// Opções de cada questão (as bolinhas da folha)
+function opcoesDaQuestao(versao, n) {
+  const g = ((pacote.geo || {}).questoes || []).find(q => q.n === n);
+  if (g && g.opcoes) return g.opcoes;
+  const q = questaoDaFolha(versao, n);
+  if (q && q.alts && q.alts.length) return q.alts.map(a => a[0]);
+  return q && q.tipo === "vf" ? ["V", "F"] : ["A", "B", "C", "D", "E"];
+}
+
+// Folha já guardada: editar aluno, respostas e notas das dissertativas
+function editarFolha(f) {
+  const v = pacote.versoes.find(x => x.versao === f.versao);
+  const gab = v ? v.respostas.map(r => r.resposta) : [];
+  const vals = (f.respostas || []).map(r => r.resp || "");
+  const nd = (pacote.dissertativas || []).length;
+  const diss = Array.from({ length: nd }, (_, i) => (f.notas_diss || [])[i] ?? null);
+  $("#f-corpo").innerHTML = `
+    <div class="cartao"><span class="rotulo">Aluno</span>
+      <div class="linha">
+        <div class="campo" style="flex:3"><label for="e-aluno">Nome</label><select id="e-aluno"></select>
+          <input id="e-aluno-outro" class="nome-outro" autocomplete="off" autocapitalize="words" placeholder="Nome do aluno" hidden></div>
+        <div class="campo" style="flex:1.6"><label for="e-ra">R.A.</label><input id="e-ra" inputmode="numeric" autocomplete="off"></div>
+      </div>
+      <div id="e-ja" class="ja-guardada" hidden></div>
+    </div>
+    <div class="cartao"><div class="placar"><div class="nota" id="e-nota"></div><div class="det" id="e-det"></div></div></div>
+    ${vals.length ? `<div class="cartao"><span class="rotulo">Respostas · toque para mudar; de novo, para deixar em branco</span><div id="e-respostas"></div></div>` : ""}
+    ${nd ? `<div class="cartao"><span class="rotulo">Dissertativas</span><div class="grade" id="e-diss"></div></div>` : ""}
+    ${f.imagem ? `<div class="cartao"><span class="rotulo">Folha lida</span><img class="folha" alt="Folha lida" src="${f.imagem}"></div>` : ""}`;
+  const sel = $("#e-aluno"), outro = $("#e-aluno-outro"), ra = $("#e-ra");
+  ra.value = f.ra || "";
+  const conta = () => {
+    const ac = Identificacao.acertos(vals, gab);
+    const completa = diss.every(x => x !== null && !isNaN(x));
+    const nota = completa ? ac * (pacote.pontos_objetiva || 0) + diss.reduce((a, x) => a + (x || 0), 0) : null;
+    $("#e-nota").innerHTML = (nota === null ? "?" : numBR(nota)) + ` <small>de ${numBR(notaMaxima(f.versao))}</small>`;
+    $("#e-det").textContent = (gab.length ? `${ac} de ${gab.length} acertos` : "") + (nota === null && nd ? " · falta nota de dissertativa" : "");
+    return { ac, nota };
+  };
+  const repetida = async () => {
+    const nome = nomeEscolhido(sel, outro);
+    const outra = nome ? (await folhasDa(pacote.hash)).find(x => x.id !== f.id && mesmoNome(x.nome, nome)) : null;
+    $("#e-ja").hidden = !outra;
+    if (outra) $("#e-ja").innerHTML = `<b>${esc(outra.nome)} já tem outra folha</b><br>Nota ${outra.nota === null ? "–" : numBR(outra.nota)} · guardada ${quandoBR(outra.quando)}. Guardar substitui aquela folha por esta.`;
+    return outra;
+  };
+  prepararAluno(sel, outro, ra, f.nome, repetida);
+
+  const caixa = $("#e-respostas");
+  (f.respostas || []).forEach((r, i) => {
+    const certa = String(gab[i] || "");
+    const linha = document.createElement("div");
+    linha.className = "qlinha" + (r.sit ? " duvida" : "");
+    linha.innerHTML = `<span class="num">${r.n}</span>` + (r.sit ? `<span class="motivo">${r.sit === "múltipla" ? "rasura" : "marca fraca"}</span>` : "");
+    const ops = document.createElement("div"); ops.className = "ops";
+    const pinta = () => {
+      for (const b of ops.children) {
+        const op = b.dataset.op, escolhida = vals[i] === op;
+        b.classList.toggle("certa", escolhida && (certa === "*" || certa.includes(op)));
+        b.classList.toggle("errada", escolhida && !(certa === "*" || certa.includes(op)));
+        b.classList.toggle("gabarito", !escolhida && certa !== "*" && certa.includes(op));
+        b.classList.toggle("rasura", vals[i].includes("+") && vals[i].split("+").includes(op));
+      }
+    };
+    for (const op of opcoesDaQuestao(f.versao, r.n)) {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = op; b.dataset.op = op;
+      b.onclick = () => { vals[i] = vals[i] === op ? "" : op; linha.classList.remove("duvida"); pinta(); conta(); };
+      ops.appendChild(b);
+    }
+    linha.appendChild(ops);
+    pinta();
+    caixa.appendChild(linha);
+  });
+  diss.forEach((x, i) => {
+    const d = document.createElement("label"); d.className = "q";
+    d.innerHTML = `<span>D${i + 1}</span>`;
+    const inp = document.createElement("input");
+    inp.type = "text"; inp.inputMode = "decimal"; inp.placeholder = "?";
+    inp.value = x === null ? "" : numBR(x);
+    inp.oninput = () => { diss[i] = inp.value.trim() === "" ? null : parseFloat(inp.value.replace(",", ".")); conta(); };
+    d.appendChild(inp);
+    const mx = document.createElement("small"); mx.textContent = `/${numBR(pacote.dissertativas[i] ?? 0)}`; d.appendChild(mx);
+    $("#e-diss").appendChild(d);
+  });
+  conta();
+
+  $("#f-acoes-ver").hidden = true; $("#f-acoes-editar").hidden = false;
+  $("#f-cancelar").onclick = () => abrirFolha(f);
+  $("#f-salvar").onclick = async () => {
+    const nome = nomeEscolhido(sel, outro);
+    if (sel.value === OUTRO_NOME && !nome) { outro.focus(); return status("Digite o nome do aluno.", true); }
+    const outra = await repetida();
+    if (outra && !(await perguntar(`Substituir a folha de ${outra.nome}?`,
+        `Ela tem nota ${outra.nota === null ? "–" : numBR(outra.nota)}. Fica só esta folha para ${outra.nome}.`,
+        [{ rotulo: "Substituir", valor: true, classe: "perigo" }]))) return;
+    const { ac, nota } = conta();
+    const nova = {
+      ...f, quando: new Date().toISOString(), nome, ra: ra.value.trim(),
+      respostas: (f.respostas || []).map((r, i) => ({ n: r.n, resp: vals[i], sit: vals[i] === (r.resp || "") ? r.sit : "" })),
+      notas_diss: diss, acertos: ac, nota,
+      conferir: [], editada: "celular",            // revista à mão: sai da lista "conferir"
+    };
+    delete nova.origem;                             // vinda do computador e mexida aqui: passa a ser do aparelho
+    const mudouNome = Identificacao.normalizarNome(nome) !== Identificacao.normalizarNome(f.nome);
+    if (mudouNome) {
+      // o arquivo no GitHub é escolhido pelo nome: o antigo vira "apagado" e a folha vai para o do nome novo
+      if (f.gh || f.nome || f.uid) window.dispatchEvent(new CustomEvent("folha-apagada", { detail: f }));
+      delete nova.gh;
+      if (nome) delete nova.uid;
+    }
+    if (outra) await apagar("folhas", outra.id);
+    await guardar("folhas", nova);
+    window.dispatchEvent(new CustomEvent("folhas-mudaram"));   // sincronização (github.js)
+    await listar();
+    abrirFolha(nova);
+    status(`Folha alterada${nome ? ": " + nome : ""}${nota === null ? "" : " · nota " + numBR(nota)}.`, false, "ok");
+  };
+  window.scrollTo(0, 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -745,10 +897,25 @@ function resumoRespostas() {
     d.onclick = () => {
       const q = questaoDaFolha(atual.versao, r.n), alvo = $("#q-detalhe");
       for (const x of caixa.children) x.classList.remove("aberta");
-      if (!q || alvo.dataset.n == r.n) { alvo.innerHTML = ""; alvo.dataset.n = ""; return; }
+      if (alvo.dataset.n == r.n) { alvo.innerHTML = ""; alvo.dataset.n = ""; return; }
       d.classList.add("aberta");
       alvo.dataset.n = r.n;
-      alvo.innerHTML = htmlQuestao(q);
+      // trocar a resposta ali mesmo: as letras da questão, como na grade de "Editar"
+      alvo.innerHTML = `<div class="qlinha trocar"><span class="rotulo">Questão ${r.n} · resposta do aluno</span><div class="ops"></div></div>` + (q ? htmlQuestao(q) : "");
+      const ops = alvo.querySelector(".ops");
+      for (const op of r.q.opcoes) {
+        const b = document.createElement("button");
+        b.type = "button"; b.textContent = op;
+        const escolhida = v === op, gab = certa === "*" || certa.includes(op);
+        if (escolhida) b.classList.add(gab ? "certa" : "errada");
+        else if (certa !== "*" && certa.includes(op)) b.classList.add("gabarito");
+        if (v.includes("+") && v.split("+").includes(op)) b.classList.add("rasura");
+        b.onclick = () => {
+          l.querySelector(`.ops button[data-op="${op}"]`).click();   // mesma troca da grade (nota recalculada)
+          resumoRespostas();
+        };
+        ops.appendChild(b);
+      }
     };
     caixa.appendChild(d);
   });
@@ -759,7 +926,7 @@ function editarRespostas(ligar) {
   $("#respostas-resumo").hidden = ligar;
   $("#legenda").hidden = ligar;
   $("#q-detalhe").hidden = ligar;
-  $("#r-resp-rotulo").textContent = ligar ? "Corrigir respostas" : "Respostas lidas · toque para ver a questão";
+  $("#r-resp-rotulo").textContent = ligar ? "Corrigir respostas" : "Respostas lidas · toque numa questão para mudar";
   $("#editar-respostas").textContent = ligar ? "Concluir" : "Editar";
   if (!ligar) resumoRespostas();
 }
@@ -773,7 +940,7 @@ function atualizarNota() {
 // Mostra se o aluno escolhido já tem folha guardada e troca os botões para Substituir / Manter a anterior.
 async function verificarRepetida() {
   if (!atual) return;
-  const res = atual, nome = $("#r-aluno").value;
+  const res = atual, nome = nomeEscolhido($("#r-aluno"), $("#r-aluno-outro"));
   const ant = nome ? (await folhasDa(pacote.hash)).filter(f => mesmoNome(f.nome, nome)).sort((a, b) => b.quando.localeCompare(a.quando))[0] : null;
   if (atual !== res) return;
   res.anterior = ant || null;
@@ -789,16 +956,8 @@ function mostrar(res, foto) {
   const cv = anotar(res);
   atual.miniatura = miniatura(cv);
   const alvo = $("#r-folha"); alvo.innerHTML = ""; cv.className = "folha"; alvo.appendChild(cv);
-  const sel = $("#r-aluno");
-  sel.innerHTML = `<option value="">— não identificado —</option>`;
-  for (const n of pacote.nomes) { const o = document.createElement("option"); o.value = o.textContent = n; sel.appendChild(o); }
-  sel.value = res.nome || "";
   $("#r-ra").value = res.ra || "";
-  sel.onchange = () => {
-    const a = pacote.alunos.find(a => a.nome === sel.value);
-    if (a) $("#r-ra").value = a.ra;
-    verificarRepetida();
-  };
+  prepararAluno($("#r-aluno"), $("#r-aluno-outro"), $("#r-ra"), res.nome || "", verificarRepetida);
   $("#r-versao").textContent = res.versao;
   // nome e R.A. escritos, para conferir
   const nomeCv = canvasDe(res.leitura.nomeEscrito); nomeCv.className = "recorte";
@@ -878,7 +1037,8 @@ function mostrar(res, foto) {
 async function salvarAtual() {
   if (!atual) return false;
   const n = notaAtual();
-  const nome = $("#r-aluno").value;
+  const nome = nomeEscolhido($("#r-aluno"), $("#r-aluno-outro"));
+  if ($("#r-aluno").value === OUTRO_NOME && !nome) { $("#r-aluno-outro").focus(); status("Digite o nome do aluno.", true); return false; }
   const ra = $("#r-ra").value.trim();
   const conferir = atual.conferir.filter(a => !/aluno não identificado/.test(a) || !nome);
   const anteriores = nome ? (await folhasDa(pacote.hash)).filter(f => mesmoNome(f.nome, nome)) : [];

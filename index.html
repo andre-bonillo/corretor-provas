@@ -180,12 +180,16 @@
   .q:not(.errada) b { color: var(--verde); }
   .q input { font-size: 17px; border: 0; background: transparent; width: 100%; min-width: 0; text-align: center; color: var(--texto); }
   .q small { color: var(--fraco); font-size: 12px; }
-  #diss .q { background: var(--fundo); }
+  #diss .q, #e-diss .q { background: var(--fundo); }
   #respostas-resumo .q { cursor: pointer; }
   .legenda { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--fraco); margin-top: 8px; }
   .legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
   .qlinha { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--linha); flex-wrap: wrap; }
   .qlinha.duvida { background: var(--amarelo); border-radius: 8px; }
+  .campo .nome-outro { margin-top: 6px; }
+  #e-respostas { margin-top: 4px; }
+  .qlinha.trocar { border-bottom: 0; padding: 10px 0 2px; }
+  .qlinha.trocar .rotulo { width: 100%; margin: 0; }
   .qlinha .num { width: 24px; text-align: right; color: var(--fraco); font-size: 14px; }
   .qlinha .motivo { order: 3; width: 100%; padding-left: 32px; font-size: 12px; color: var(--amarelo-texto); }
   .qlinha .ops { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -822,12 +826,13 @@
       <div class="cartao">
         <span class="rotulo">Nome escrito na folha</span><div id="r-nome-img"></div>
         <div class="linha">
-          <div class="campo" style="flex:3"><label for="r-aluno">Aluno</label><select id="r-aluno"></select></div>
+          <div class="campo" style="flex:3"><label for="r-aluno">Aluno</label><select id="r-aluno"></select>
+            <input id="r-aluno-outro" class="nome-outro" autocomplete="off" autocapitalize="words" placeholder="Nome do aluno" hidden></div>
           <div class="campo" style="flex:1.6"><label for="r-ra">R.A.</label><input id="r-ra" inputmode="numeric" autocomplete="off"></div>
         </div>
       </div>
       <div id="bloco-respostas" class="cartao">
-        <div class="titulo-linha"><span class="rotulo" id="r-resp-rotulo">Respostas lidas · toque para ver a questão</span><button id="editar-respostas" type="button" class="mini">Editar</button></div>
+        <div class="titulo-linha"><span class="rotulo" id="r-resp-rotulo">Respostas lidas · toque numa questão para mudar</span><button id="editar-respostas" type="button" class="mini">Editar</button></div>
         <div id="respostas-resumo" class="grade"></div>
         <div class="legenda" id="legenda"><span><i style="background:var(--verde-claro)"></i>certa</span><span><i style="background:var(--vermelho-claro)"></i>errada</span><span><i style="outline:2px solid var(--laranja)"></i>conferir</span></div>
         <div id="q-detalhe"></div>
@@ -848,7 +853,10 @@
 <section id="tela-folha" class="tela" hidden>
   <header class="barra"><button class="voltar" data-ir="prova">Prova</button><h1 id="f-nome"></h1><div class="sub" id="f-info"></div></header>
   <main id="f-corpo"></main>
-  <footer class="rodape"><button id="f-apagar" class="botao sec" style="color:var(--vermelho)">Apagar esta folha</button></footer>
+  <footer class="rodape">
+    <div id="f-acoes-ver" class="linha"><button id="f-apagar" class="botao sec" style="color:var(--vermelho)">Apagar</button><button id="f-editar" class="botao">Editar</button></div>
+    <div id="f-acoes-editar" class="linha" hidden><button id="f-cancelar" class="botao sec">Cancelar</button><button id="f-salvar" class="botao verde">Guardar alterações</button></div>
+  </footer>
 </section>
 
 <div id="aviso" hidden><span class="girando" hidden></span><span class="txt"></span><button type="button" aria-label="Fechar">×</button></div>
