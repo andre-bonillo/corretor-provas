@@ -156,7 +156,7 @@ function combinarRA(marcado, escrito, rasConhecidos, pontos) {
     else { ra += "?"; avisos.push(`R.A. col. ${k} ilegível`); }
   });
   const conhecidos = new Set(rasConhecidos.map(soDigitos).filter(Boolean));
-  if (!conhecidos.size) return [ra, avisos];
+  if (!conhecidos.size) return [ra, avisos.length ? ["R.A. não identificado corretamente"] : []];
   const n = colunas.length, melhores = [];
   for (const r of conhecidos) {
     const cand = r.padStart(n, "0");
@@ -179,12 +179,12 @@ function combinarRA(marcado, escrito, rasConhecidos, pontos) {
     const [s1, c1] = melhores[0];
     const s2 = melhores.length > 1 ? melhores[1][0] : -1e9;
     if (s1 >= n * Math.log(0.02)) {
-      if (s1 - s2 >= Math.log(50)) return [c1, c1 === ra ? [] : [`R.A. identificado pela lista da turma (lido ${ra} → ${c1})`]];
-      if (s1 - s2 >= Math.log(4)) avisos.push(`R.A. provável ${c1} (confira na imagem)`);
+      if (s1 - s2 >= Math.log(50)) return [c1, []];   // a lista da turma resolve a leitura com folga
+      if (s1 - s2 >= Math.log(4)) return [ra, [`R.A. não identificado corretamente (provável ${c1})`]];
     }
   }
-  avisos.push("R.A. fora da lista da turma");
-  return [ra, avisos];
+  // um aviso só para o R.A., em vez de um por coluna
+  return [ra, ["R.A. não identificado corretamente"]];
 }
 
 // Cruza o R.A. com o nome escrito (corrigir.decidir_aluno). Devolve [nome, ra, avisos].
