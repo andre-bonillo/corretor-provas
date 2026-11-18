@@ -8,7 +8,7 @@ const AoVivo = (() => {
   const TOLERANCIA = 0.025;     // quanto os cantos podem se mexer entre quadros (fração do tamanho da folha)
 
   let fluxo = null, video = null, rodando = false, estado = "procurando";
-  let anteriores = [], ultimaFolha = null, quadrosSemFolha = 0;
+  let anteriores = [], ultimaFolha = null, quadrosSemFolha = 0, lanterna = false;
   const cvQuadro = document.createElement("canvas");
   const ctxQuadro = cvQuadro.getContext("2d", { willReadFrequently: true });
 
@@ -63,6 +63,25 @@ const AoVivo = (() => {
     ctx.lineWidth = 4; ctx.strokeStyle = cor; ctx.stroke();
   }
 
+  // Folha lida: o resultado ocupa a tela; a câmera vira uma faixa com os botões.
+  function telaCheia(sim) { el("vivo").classList.toggle("com-resultado", sim); }
+
+  async function ligarLanterna(ligar) {
+    const trilha = fluxo && fluxo.getVideoTracks()[0];
+    const b = el("vivo-lanterna");
+    if (!trilha) return;
+    try {
+      await trilha.applyConstraints({ advanced: [{ torch: ligar }] });
+      lanterna = ligar;
+    } catch (e) {
+      lanterna = false;
+      if (ligar) aviso("Este aparelho não deixou o navegador ligar a lanterna.", "alerta");
+    }
+    b.classList.toggle("ligada", lanterna);
+    b.setAttribute("aria-pressed", String(lanterna));
+    b.setAttribute("aria-label", lanterna ? "Desligar a lanterna" : "Ligar a lanterna");
+  }
+
   function aviso(txt, tipo = "") { const a = el("vivo-aviso"); a.textContent = txt; a.className = tipo; }
 
   async function corrigirAgora() {
@@ -81,6 +100,7 @@ const AoVivo = (() => {
     desenhar(null);
     if (navigator.vibrate) navigator.vibrate(60);
     mostrar(res);
+    telaCheia(true);
     el("vivo-painel").scrollTop = 0;
     const nota = res.nota === null || res.notasDiss.some(v => v === null) ? "nota incompleta" : `nota ${numBR(res.nota)}`;
     aviso(`${res.nome || "Aluno não identificado"} · ${nota}` + (res.conferir.length ? " · conferir" : " · confira e guarde"), res.conferir.length ? "alerta" : "");
@@ -103,6 +123,7 @@ const AoVivo = (() => {
   function proxima(esperarTroca) {
     atual = null;
     el("passo-resultado").hidden = true;
+    telaCheia(false);
     estado = esperarTroca ? "esperando-troca" : "procurando";
     if (!esperarTroca) ultimaFolha = null;
     anteriores = [];
@@ -171,6 +192,10 @@ const AoVivo = (() => {
     rodando = false;
     if (fluxo) fluxo.getTracks().forEach(t => t.stop());
     fluxo = null;
+    lanterna = false;
+    el("vivo-lanterna").classList.remove("ligada");
+    el("vivo-lanterna").setAttribute("aria-pressed", "false");
+    telaCheia(false);
     el("vivo").hidden = true;
     document.body.classList.remove("vivo-aberto");
     el("conferencia-corpo").appendChild(el("passo-resultado"));
@@ -181,6 +206,7 @@ const AoVivo = (() => {
   function ligar() {
     el("ao-vivo").onclick = abrir;
     el("vivo-fechar").onclick = fechar;
+    el("vivo-lanterna").onclick = () => ligarLanterna(!lanterna);
     const guardarOriginal = el("guardar").onclick, descartarOriginal = el("descartar").onclick;
     el("guardar").onclick = () => rodando ? guardar_() : guardarOriginal();
     el("descartar").onclick = () => {

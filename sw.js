@@ -1,5 +1,5 @@
 // Guarda a página e os modelos no aparelho, para funcionar sem internet.
-const VERSAO = "corretor-v14";
+const VERSAO = "corretor-v15";
 const ARQUIVOS = ["./", "index.html", "app.js", "leitura.js", "identificacao.js", "ao_vivo.js", "onedrive.js", "nuvem.js", "github.js", "inicio.js", "navegacao.js", "manifest.webmanifest", "icone.png",
   "vendor/ort.wasm.min.js", "vendor/ort-wasm-simd-threaded.mjs", "vendor/ort-wasm-simd-threaded.wasm",
   "modelos/mnist-12.onnx", "modelos/latin_PP-OCRv5_rec_mobile.onnx", "modelos/ppocrv5_latin_dict.txt"];
