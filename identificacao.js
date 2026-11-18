@@ -247,11 +247,11 @@ async function corrigirFolha(gray, loc, pacote) {
   [nome, ra, conferir] = decidirAluno(ra, conferir, pontosRA, post, ras);
   if (!nome && (Object.keys(ras).length || pacote.nomes.length)) conferir.push("aluno não identificado");
   // Avisos só do que precisa de olho humano: mais de uma marcada ou nenhuma marca clara.
-  // Questão em branco não gera aviso. Uma marca nítida com um borrão ao lado não gera aviso.
+  // Questão em branco também conta como sem marca clara. Uma marca nítida com um borrão ao lado não gera aviso.
   for (const r of L.respostas) {
     if (r.sit === "dúvida" && r.resp && r.resp !== "?") r.sit = "";
     if (r.sit === "múltipla") conferir.push(`Q${r.n} mais de uma marcada (${r.resp})`);
-    else if (r.sit === "dúvida") conferir.push(`Q${r.n} sem marca clara`);
+    else if (r.sit === "dúvida" || !r.resp) conferir.push(`Q${r.n} sem marca clara`);
   }
   const resps = L.respostas.map(r => r.resp);
   const ac = acertos(resps, versao.respostas.map(r => r.resposta));

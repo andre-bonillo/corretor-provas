@@ -101,7 +101,7 @@ function miniatura(cv, largura = 700) {
 function motivoQuestao(r) {
   const resp = r.resp || "";
   if (r.sit === "múltipla" || resp.includes("+")) return "mais de uma";
-  return resp === "?" ? "sem marca clara" : "";
+  return resp === "?" || !resp ? "sem marca clara" : "";
 }
 
 // Telas, avisos e perguntas
@@ -1008,7 +1008,7 @@ function mostrar(res, foto) {
   const versao = pacote.versoes.find(v => v.versao === res.versao);
   const grade = $("#respostas"); grade.querySelectorAll(".qlinha").forEach(l => l.remove());
   // uma linha por questão, com as opções como botões (toque para marcar; toque de novo para deixar em branco).
-  // As questões com mais de uma marcada ou sem marca clara vêm primeiro, destacadas.
+  // As questões com mais de uma marcada ou sem marca clara (inclusive em branco) vêm primeiro, destacadas.
   const ordem = res.leitura.respostas.map((r, i) => i).sort((a, b) =>
     (motivoQuestao(res.leitura.respostas[a]) ? 0 : 1) - (motivoQuestao(res.leitura.respostas[b]) ? 0 : 1) || a - b);
   for (const i of ordem) {
