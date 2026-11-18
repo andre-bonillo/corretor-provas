@@ -97,6 +97,14 @@ function miniatura(cv, largura = 700) {
 }
 
 // ---------------------------------------------------------------------------
+// Rótulo curto do problema de uma questão lida ("" quando não há o que conferir)
+function motivoQuestao(r) {
+  const resp = r.resp || "";
+  if (r.sit === "múltipla" || resp.includes("+")) return "mais de uma";
+  if (resp === "?") return "sem marca clara";
+  return resp ? "" : "em branco";
+}
+
 // Telas, avisos e perguntas
 // ---------------------------------------------------------------------------
 
@@ -833,8 +841,8 @@ function editarFolha(f) {
   (f.respostas || []).forEach((r, i) => {
     const certa = String(gab[i] || "");
     const linha = document.createElement("div");
-    linha.className = "qlinha" + (r.sit ? " duvida" : "");
-    linha.innerHTML = `<span class="num">${r.n}</span>` + (r.sit ? `<span class="motivo">${r.sit === "múltipla" ? "rasura" : "marca fraca"}</span>` : "");
+    linha.className = "qlinha" + (motivoQuestao(r) ? " duvida" : "");
+    linha.innerHTML = `<span class="num">${r.n}</span>` + (motivoQuestao(r) ? `<span class="motivo">${motivoQuestao(r)}</span>` : "");
     const ops = document.createElement("div"); ops.className = "ops";
     const pinta = () => {
       for (const b of ops.children) {
@@ -1001,19 +1009,19 @@ function mostrar(res, foto) {
   const versao = pacote.versoes.find(v => v.versao === res.versao);
   const grade = $("#respostas"); grade.querySelectorAll(".qlinha").forEach(l => l.remove());
   // uma linha por questão, com as opções como botões (toque para marcar; toque de novo para deixar em branco).
-  // As questões com rasura ou marca fraca vêm primeiro, destacadas.
+  // As questões com mais de uma marcada, sem marca clara ou em branco vêm primeiro, destacadas.
   const ordem = res.leitura.respostas.map((r, i) => i).sort((a, b) =>
-    (res.leitura.respostas[a].sit ? 0 : 1) - (res.leitura.respostas[b].sit ? 0 : 1) || a - b);
+    (motivoQuestao(res.leitura.respostas[a]) ? 0 : 1) - (motivoQuestao(res.leitura.respostas[b]) ? 0 : 1) || a - b);
   for (const i of ordem) {
     const r = res.leitura.respostas[i];
     const certa = String(versao.respostas[i].resposta || "");
     const linha = document.createElement("div");
-    linha.className = "qlinha" + (r.sit ? " duvida" : "");
+    linha.className = "qlinha" + (motivoQuestao(r) ? " duvida" : "");
     linha.dataset.i = i;
     linha.dataset.valor = r.resp;
     const marcadas = new Set(r.resp.split("+").filter(Boolean));
     linha.innerHTML = `<span class="num">${r.n}</span>` +
-      (r.sit ? `<span class="motivo">${r.sit === "múltipla" ? "rasura" : "marca fraca"}</span>` : "");
+      (motivoQuestao(r) ? `<span class="motivo">${motivoQuestao(r)}</span>` : "");
     const ops = document.createElement("div"); ops.className = "ops";
     for (const op of r.q.opcoes) {
       const b = document.createElement("button");
