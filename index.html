@@ -187,6 +187,10 @@
   .qlinha { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--linha); flex-wrap: wrap; }
   .qlinha.duvida { background: var(--amarelo); border-radius: 8px; }
   .campo .nome-outro { margin-top: 6px; }
+  .sugestoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .sugestoes:empty { display: none; }
+  .sugestoes .mini { font-size: 14px; }
+  .sugestoes small { color: var(--fraco); font-size: 12px; align-self: center; }
   #e-respostas { margin-top: 4px; }
   .qlinha.trocar { border-bottom: 0; padding: 10px 0 2px; }
   .qlinha.trocar .rotulo { width: 100%; margin: 0; }
