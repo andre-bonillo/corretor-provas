@@ -189,6 +189,40 @@
     return { novas, atualizadas, total: arquivos.length };
   }
 
+  // ---------------------------------------------------------------- turmas (só leitura)
+  // turmas/*.json: agenda, alunos e notas, aulas de cada turma (pacote_turma.py, no computador).
+  // Guardadas em config "turmas" e "agendas"; o que sumiu do repositório sai também do aparelho.
+  async function receberTurmas(itens) {
+    const arquivos = itens.filter(i => /^turmas\/[^/]+\.json$/i.test(i.path));
+    const vistos = (await ler("config", "gh-turmas").catch(() => null)) || {};
+    // nada mudou no GitHub (o caso comum, a cada folha guardada): não relê nem regrava nada
+    if (arquivos.length === Object.keys(vistos).length && arquivos.every(i => vistos[i.path] === i.sha)) return false;
+    let turmas = (await ler("config", "turmas").catch(() => null)) || [];
+    let agendas = (await ler("config", "agendas").catch(() => null)) || [];
+    const agora = {};
+    let mudou = false;
+    for (const i of arquivos) {
+      agora[i.path] = i.sha;
+      if (vistos[i.path] === i.sha) continue;
+      const p = JSON.parse(await api(`${BASE}/contents/${caminho(i.path)}`, { bruto: true }));
+      if (p && p.tipo === "gerador-de-provas/turma") {
+        turmas = turmas.filter(t => t._path !== i.path && t.id !== p.id).concat({ ...p, _path: i.path });
+        mudou = true;
+      } else if (p && p.tipo === "gerador-de-provas/agenda") {
+        agendas = agendas.filter(a => a._path !== i.path).concat({ ...p, _path: i.path });
+        mudou = true;
+      }
+    }
+    const antes = turmas.length + agendas.length;
+    turmas = turmas.filter(t => agora[t._path]);
+    agendas = agendas.filter(a => agora[a._path]);
+    if (turmas.length + agendas.length !== antes) mudou = true;
+    if (mudou) { await guardar("config", turmas, "turmas"); await guardar("config", agendas, "agendas"); }
+    await guardar("config", agora, "gh-turmas");
+    if (mudou) window.dispatchEvent(new Event("turmas-mudaram"));
+    return mudou;
+  }
+
   // ---------------------------------------------------------------- tudo
   async function sincronizar(silencioso) {
     if (!lerChave() || !navigator.onLine) return;
@@ -199,6 +233,8 @@
       const itens = await arvore();
       const p = await receberProvas(itens);
       const f = await sincronizarFolhas(itens);
+      try { await receberTurmas(itens); }                 // uma falha aqui não atrapalha as provas e as folhas
+      catch (e) { if (e.chave) throw e; console.warn("turmas:", e); }
       try { localStorage.setItem(ULTIMA, String(Date.now())); } catch (e) {}
       mostrar();
       if (p.novas || p.atualizadas || f.recebidas || f.apagadas) {

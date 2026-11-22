@@ -97,7 +97,8 @@
   window.desenharInicio = function desenharInicio() {
     const caixa = $("#vista-inicio"); caixa.innerHTML = ""; caixa.className = "ini";
     const { ps, porHash, pendentes } = dadosLista;
-    if (!ps.length) return;
+    const nTurmas = window.Turmas ? Turmas.lista().length : 0;
+    if (!ps.length && !nTurmas) return;
     const h = hoje();
 
     // números
@@ -112,7 +113,7 @@
     topo.innerHTML = `<div class="ini-hoje">${esc(maiuscula(diaLongo(h)))}</div>
       <div class="ini-numeros">
         <button type="button" data-ir-modo="lista"><b>${ps.length}</b><small>provas</small></button>
-        <button type="button" data-ir-modo="disciplinas"><b>${discs.length}</b><small>disciplinas</small></button>
+        <button type="button" data-ir-modo="disciplinas"><b>${nTurmas || discs.length}</b><small>${nTurmas ? "turmas" : "disciplinas"}</small></button>
         <div><b>${feitasTot}</b><small>corrigidas</small></div>
         <div><b>${faltamTot}</b><small>a corrigir</small></div>
       </div>`;
@@ -162,7 +163,8 @@
     // duas colunas no iPad (uma só no iPhone): calendário e próximas datas | em correção e disciplinas
     const col = (...els) => { const d = document.createElement("div"); d.className = "ini-col"; d.append(...els); return d; };
     const grade = document.createElement("div"); grade.className = "ini-grade-quadros";
-    grade.append(col(miniCalendario(ps), cProx), col(cCor, cDisc));
+    const cAulas = window.Turmas ? Turmas.cartaoProximasAulas() : null;     // agenda das turmas (turmas.js)
+    grade.append(col(...[cAulas, miniCalendario(ps), cProx].filter(Boolean)), col(cCor, cDisc));
     caixa.append(topo, grade);
   };
 })();

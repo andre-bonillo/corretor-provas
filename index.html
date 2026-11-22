@@ -10,7 +10,7 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icone.png">
-<title>Corretor de provas</title>
+<title>Logos</title>
 <script>{ const q = new URLSearchParams(location.search), h = document.documentElement; let t = null, c = null;
   try { t = localStorage.getItem("tema"); c = localStorage.getItem("cor"); } catch (e) {}
   h.dataset.tema = q.get("tema") || t || "vidro";
@@ -680,13 +680,51 @@
     body[data-nav="lateral"][data-tela="provas"] .nav-lateral, body[data-nav="lateral"][data-tela="ajustes"] .nav-lateral { display: flex; }
     body[data-nav="lateral"][data-tela="provas"] .tela, body[data-nav="lateral"][data-tela="ajustes"] .tela { padding-left: 272px; }
   }
+  /* ---------- turmas (turmas.js): contorno por instituição — vermelho Libertas, azul Unifeg ---------- */
+  :root { --cor-libertas: #e0343a; --cor-unifeg: #2f6fe4; }
+  @media (prefers-color-scheme: dark) { :root { --cor-libertas: #ff5a5f; --cor-unifeg: #5b95ff; } }
+  :root[data-cor="meia-noite"] { --cor-libertas: #ff5a5f; --cor-unifeg: #5b95ff; }
+  .inst-libertas { --cor-inst: var(--cor-libertas); } .inst-unifeg { --cor-inst: var(--cor-unifeg); }
+  .cartao.inst-libertas, .cartao.inst-unifeg, .lista-provas li.inst-libertas, .lista-provas li.inst-unifeg {
+    outline: 2px solid var(--cor-inst); outline-offset: -2px; }
+  .ini-data.inst-libertas, .ini-data.inst-unifeg { box-shadow: inset 0 0 0 2px var(--cor-inst); }
+  [data-tema="apple-music"] .lista-provas li.inst-libertas, [data-tema="apple-music"] .lista-provas li.inst-unifeg { outline-offset: 4px; border-radius: 10px; }
+  [data-tema="academico"] .lista-provas li.inst-libertas, [data-tema="academico"] .lista-provas li.inst-unifeg { border-left-color: var(--cor-inst); }
+  .turma-topo { display: flex; width: 100%; border: 0; background: none; color: var(--texto); text-align: left; padding: 0; cursor: pointer; font: inherit; }
+  .turma-topo .disc { font-size: 13px; color: var(--fraco); }
+  .turma-prox { display: grid; gap: 6px; margin: 0 0 10px; font-size: 14px; }
+  .turma-prox div { display: flex; justify-content: space-between; gap: 10px; background: var(--fundo); border-radius: 10px; padding: 7px 10px; }
+  .turma-prox span { color: var(--fraco); } .turma-prox b { text-align: right; }
+  .turma-botoes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .turma-botoes .mini { padding: 6px 4px; font-size: 13px; }
+  #tela-turma .barra h1::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--cor-inst, transparent); margin-right: 8px; vertical-align: middle; }
+  .turma-conta { margin: 0 0 10px; }
+  .turma-passados summary, .turma-plano summary, .turma-material summary { cursor: pointer; font-weight: 600; padding: 4px 2px; }
+  .turma-passados { margin-bottom: 12px; } .turma-passados .cartao { margin-top: 8px; }
+  .turma-plano, .turma-material { margin-top: 12px; } .turma-material ul { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
+  .turma-material li { margin: 3px 0; }
+  .ini-linha.ev-sem-aula { opacity: .55; } .ini-linha.ev-sem-aula .ini-nome { text-decoration: line-through; }
+  .ini-linha:disabled { cursor: default; color: var(--texto); }
+  .turma-alunos .notas-aluno { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; justify-content: flex-start; max-width: none; }
+  .turma-conta { display: inline-block; background: var(--cartao); color: var(--texto); border-radius: 10px; padding: 6px 10px; font-size: 13px; }
+  .turma-alunos .etiqueta.aviso { background: #fff1d6; color: #9a6200; }
+  .turma-detalhe { background: var(--fundo); }
+  .turma-detalhe dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 0 0 8px; font-size: 14px; }
+  .turma-detalhe dt { color: var(--fraco); } .turma-detalhe dd { margin: 0; font-weight: 600; text-align: right; }
+  .det-grupo { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--destaque); margin: 8px 0 4px; }
+  .aula-topo { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; } .aula-topo b { font-size: 17px; }
+  .doc { font-size: 15px; line-height: 1.45; } .doc h3 { font-size: 16px; margin: 14px 0 6px; } .doc h3:first-child { margin-top: 0; }
+  .doc p { margin: 6px 0; } .doc .tp-l { position: relative; padding-left: 16px; margin: 3px 0; }
+  .doc .tp-l::before { content: "•"; position: absolute; left: 3px; color: var(--fraco); }
+  .doc .tp-l.n2 { margin-left: 16px; } .doc .tp-l.n3 { margin-left: 32px; } .doc .tp-l.n4 { margin-left: 48px; }
+  .aula-nav { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
 </style>
 </head>
 <body data-tela="provas" data-nav="abas">
 
 <!-- 1. Lista das provas guardadas no aparelho -->
 <section id="tela-provas" class="tela">
-  <header class="barra"><button class="nav-gaveta-botao" type="button" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>Corretor de provas</h1><div class="sub" id="provas-sub">Provas guardadas neste aparelho</div><div id="nav-icones" class="nav-icones"></div></header>
+  <header class="barra"><button class="nav-gaveta-botao" type="button" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>Logos</h1><div class="sub" id="provas-sub">Provas guardadas neste aparelho</div><div id="nav-icones" class="nav-icones"></div></header>
   <main>
     <!-- lugar previsto para a conexão com o OneDrive (onedrive.js, integrado depois) -->
     <div id="od-cartao" class="cartao od" hidden>
@@ -696,7 +734,7 @@
     <div class="segmentos" id="modo-provas">
       <button data-modo="inicio" class="ativo">Início</button>
       <button data-modo="lista">Provas</button>
-      <button data-modo="disciplinas">Disciplinas</button>
+      <button data-modo="disciplinas">Turmas</button>
       <button data-modo="calendario">Calendário</button>
     </div>
     <div class="filtros" id="filtros">
@@ -799,6 +837,21 @@
   </footer>
 </section>
 
+<!-- 1c. Turma: agenda, alunos e notas, aulas e provas (turmas.js) -->
+<section id="tela-turma" class="tela" hidden>
+  <header class="barra"><button class="voltar" id="turma-voltar">Turmas</button><h1 id="turma-titulo">Turma</h1><div class="sub" id="turma-info"></div></header>
+  <main>
+    <div class="segmentos" id="turma-abas">
+      <button type="button" data-taba="agenda">Agenda</button>
+      <button type="button" data-taba="alunos">Alunos</button>
+      <button type="button" data-taba="aulas">Aulas</button>
+      <button type="button" data-taba="provas">Provas</button>
+    </div>
+    <div class="campo" id="turma-busca-campo" style="margin:0 0 12px" hidden><input id="turma-busca" type="search" placeholder="Buscar por nome ou R.A." autocomplete="off"></div>
+    <div id="turma-corpo"></div>
+  </main>
+</section>
+
 <!-- 2b. Alunos inscritos na disciplina -->
 <section id="tela-alunos" class="tela" hidden>
   <header class="barra"><button class="voltar" id="alunos-voltar">Voltar</button><h1 id="alunos-titulo">Alunos</h1><div class="sub" id="alunos-info"></div></header>
@@ -898,6 +951,7 @@
 <script src="nuvem.js"></script>
 <script src="github.js"></script>
 <script src="inicio.js"></script>
+<script src="turmas.js"></script>
 <script src="navegacao.js"></script>
 </body>
 </html>

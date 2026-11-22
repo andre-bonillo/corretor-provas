@@ -43,7 +43,7 @@
   };
   const CORES = { inicio: "#4f5bd5", lista: "#2f7bf6", disciplinas: "#8e5cf0", calendario: "#ef4b4b", abrir: "#21a366", ajustes: "#7a8590",
                   aparencia: "#f59e0b", exibicao: "#14a3b8", icones: "#e5508f" };
-  const ROTULOS = { inicio: "Início", lista: "Provas", disciplinas: "Disciplinas", calendario: "Calendário", ajustes: "Ajustes" };
+  const ROTULOS = { inicio: "Início", lista: "Provas", disciplinas: "Turmas", calendario: "Calendário", ajustes: "Ajustes" };
 
   const lerPrevia = (k, validos) => { const v = new URLSearchParams(location.search).get(k); return validos.includes(v) ? v : null; };
   let previa = lerPrevia("nav", FORMATOS), previaIc = lerPrevia("icones", Object.keys(ESTILOS));
@@ -175,6 +175,6 @@
     marcar();
   }
 
-  window.Navegacao = { marcar, fecharOpcoes };
+  window.Navegacao = { marcar, fecharOpcoes, irModo };
   window.addEventListener("load", () => { montar(); aplicar(); });
 })();

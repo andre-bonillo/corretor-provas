@@ -107,7 +107,7 @@ function motivoQuestao(r) {
 // Telas, avisos e perguntas
 // ---------------------------------------------------------------------------
 
-const TELAS = ["provas", "ajustes", "prova", "alunos", "questoes", "conferencia", "folha"];
+const TELAS = ["provas", "ajustes", "turma", "prova", "alunos", "questoes", "conferencia", "folha"];
 const todos = (loja) => tx(loja, "readonly", s => s.getAll());
 const nomeProva = (p) => p.nome.replace(" - Gabaritos", "");
 const vivoAberto = () => document.body.classList.contains("vivo-aberto");
@@ -274,7 +274,8 @@ function desenharProvas() {
   for (const b of document.querySelectorAll("#modo-provas button")) b.classList.toggle("ativo", b.dataset.modo === modoProvas);
   for (const m of ["inicio", "lista", "disciplinas", "calendario"]) $("#vista-" + m).hidden = m !== modoProvas;
   if (modoProvas === "inicio") $("#filtros").hidden = true;          // o resumo mostra tudo, sem filtro
-  $("#provas-vazio").hidden = dadosLista.ps.length > 0;
+  $("#filtro-disc").hidden = modoProvas === "disciplinas" && !!(window.Turmas && Turmas.lista().length);   // nas turmas, só a instituição
+  $("#provas-vazio").hidden = dadosLista.ps.length > 0 || !!(window.Turmas && Turmas.lista().length);
   const ps = provasFiltradas();
   if (modoProvas === "inicio") desenharInicio();
   else if (modoProvas === "lista") desenharLista(ps);
@@ -287,6 +288,7 @@ function liProva(p) {
   const suas = porHash[p.hash] || [], total = totalAlunos(p), feitas = corrigidas(suas), pend = pendentes[p.hash];
   const i = infoProva(p), d = dataDe(p);
   const li = document.createElement("li");
+  if (window.Turmas && Turmas.classeInst(i.inst)) li.className = Turmas.classeInst(i.inst);
   li.innerHTML = `<button class="abrir-prova">${htmlCapa(p)}
     <div class="corpo-prova">
       <div class="nome">${esc(nomeProva(p))}</div>
@@ -314,9 +316,11 @@ function gruposDisciplina(ps) {
 
 function desenharDisciplinas(ps) {
   const caixa = $("#vista-disciplinas"); caixa.innerHTML = "";
-  for (const [k, { info, provas }] of gruposDisciplina(ps)) {
+  // turmas vindas do computador (turmas.js); as provas que já aparecem numa turma não repetem embaixo
+  const jaNaTurma = window.Turmas ? Turmas.desenharCartoes(caixa, filtro.inst) : new Set();
+  for (const [k, { info, provas }] of gruposDisciplina(ps.filter(p => !jaNaTurma.has(p.hash)))) {
     const alunos = alunosDaDisciplina(provas).length;
-    const div = document.createElement("div"); div.className = "cartao disciplina";
+    const div = document.createElement("div"); div.className = "cartao disciplina " + (window.Turmas ? Turmas.classeInst(info.inst) : "");
     div.innerHTML = `<div class="disc-topo">${htmlCapa(provas[0])}<div><div class="nome">${esc(info.disciplina)}</div>
       <div class="disc">${esc([info.inst, info.turma, info.semestre].filter(Boolean).join(" · "))}</div></div></div>
       <ul class="itens embutida"></ul>
@@ -332,7 +336,7 @@ function desenharDisciplinas(ps) {
     div.querySelector(".ver-alunos").onclick = () => abrirAlunos(k, "provas");
     caixa.appendChild(div);
   }
-  if (!caixa.children.length && dadosLista.ps.length) caixa.innerHTML = `<div class="vazio">Nenhuma disciplina com este filtro.</div>`;
+  if (!caixa.children.length && dadosLista.ps.length) caixa.innerHTML = `<div class="vazio">Nenhuma turma com este filtro.</div>`;
 }
 
 function inicioSemana(d) { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - x.getDay()); return x; }
