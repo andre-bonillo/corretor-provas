@@ -75,9 +75,17 @@
   }
 
   // ---------------------------------------------------------------- folhas
+  // Homônimos (mesmo nome na turma): o arquivo leva também o R.A.; para os demais, só o nome, como sempre.
+  const provasCache = {};
+  async function homonimoNaProva(f) {
+    if (!(f.hash in provasCache)) provasCache[f.hash] = await ler("pacotes", f.hash).catch(() => null);
+    const p = provasCache[f.hash];
+    return !!p && homonimosDe(p).has(Identificacao.normalizarNome(f.nome));
+  }
   async function chaveDa(f) {
     if (!f.nome) return "u-" + f.uid;
-    const h = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(Identificacao.normalizarNome(f.nome)));
+    const texto = Identificacao.normalizarNome(f.nome) + (await homonimoNaProva(f) && soDig(f.ra) ? "|" + soDig(f.ra) : "");
+    const h = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(texto));
     return "n-" + [...new Uint8Array(h)].slice(0, 10).map(x => x.toString(16).padStart(2, "0")).join("");
   }
   // a folha recebida guarda o arquivo de onde veio (gh); a corrigida aqui usa a chave calculada
@@ -102,6 +110,7 @@
   function agendar() { clearTimeout(espera); espera = setTimeout(() => sincronizar(true), 1500); }
 
   async function sincronizarFolhas(itens) {
+    for (const k of Object.keys(provasCache)) delete provasCache[k];   // a lista da turma pode ter mudado
     const hashes = new Set((await todos("pacotes")).map(p => String(p.hash)));   // o hash é número; a pasta, texto
     const res = { recebidas: 0, apagadas: 0, enviadas: 0, conflitos: [], falhas: 0 };
     const remoto = {};

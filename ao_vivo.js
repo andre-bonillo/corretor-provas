@@ -106,7 +106,7 @@ const AoVivo = (() => {
     aviso(`${res.nome || "Aluno não identificado"} · ${nota}` + (res.conferir.length ? " · conferir" : " · confira e guarde"), res.conferir.length ? "alerta" : "");
     // guarda sozinho quando não há nada a conferir (se a opção estiver ligada)
     if (el("vivo-auto").checked && !res.conferir.length && res.nome) {
-      const ja = (await folhasDa(pacote.hash)).some(f => Identificacao.normalizarNome(f.nome) === Identificacao.normalizarNome(res.nome));
+      const ja = (await folhasDa(pacote.hash)).some(f => mesmoAluno(f, res.nome, res.ra));
       if (!ja) { await dormir(900); if (estado === "resultado" && atual === res) await guardar_(); }
     }
   }

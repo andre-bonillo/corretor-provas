@@ -188,7 +188,7 @@ function combinarRA(marcado, escrito, rasConhecidos, pontos) {
 }
 
 // Cruza o R.A. com o nome escrito (corrigir.decidir_aluno). Devolve [nome, ra, avisos].
-function decidirAluno(ra, avisos, pontosRA, post, ras) {
+function decidirAluno(ra, avisos, pontosRA, post, ras, homs = new Set()) {
   const nomeRA = ra && !ra.includes("?") ? (ras[soDigitos(ra)] || "") : "";
   const ks = Object.keys(post);
   if (!ks.length) return [nomeRA, ra, avisos];
@@ -201,6 +201,8 @@ function decidirAluno(ra, avisos, pontosRA, post, ras) {
     return [nomeRA, ra, [...avisos, "nome escrito não confirma o R.A."]];
   }
   if (pm < 0.98) return ["", ra, [...avisos, ...(pm >= 0.6 ? [`nome escrito parece ser ${melhor.trim()}`] : [])]];
+  // nome repetido na turma e R.A. que não aponta nenhum dos dois: o nome não basta para saber qual é
+  if (homs.has(normalizarNome(melhor))) return [melhor, "", [...avisos, `há mais de um aluno chamado ${melhor.trim()}: confira o R.A.`]];
   const raDoNome = Object.keys(ras).find(r => normalizarNome(ras[r]) === normalizarNome(melhor));
   const lido = soDigitos(ra.replace(/\?/g, ""));
   if (raDoNome === undefined) return [melhor, ra, ["identificado pelo nome (aluno sem R.A. na planilha)"]];
@@ -244,7 +246,11 @@ async function corrigirFolha(gray, loc, pacote) {
   let [ra, conferir] = combinarRA(L.marcado, escrito, Object.keys(ras), pontosRA);
   const post = await probNomes(L.nomeEscrito, pacote.nomes);
   let nome;
-  [nome, ra, conferir] = decidirAluno(ra, conferir, pontosRA, post, ras);
+  const contaNomes = {};
+  for (const n of pacote.nomes || []) { const k = normalizarNome(n); if (k) contaNomes[k] = (contaNomes[k] || 0) + 1; }
+  for (const a of pacote.alunos || []) { const k = normalizarNome(a.nome); if (k) contaNomes["ra:" + k] = (contaNomes["ra:" + k] || 0) + 1; }
+  const homs = new Set(Object.keys(contaNomes).filter(k => contaNomes[k] > 1).map(k => k.replace(/^ra:/, "")));
+  [nome, ra, conferir] = decidirAluno(ra, conferir, pontosRA, post, ras, homs);
   if (!nome && (Object.keys(ras).length || pacote.nomes.length)) conferir.push("aluno não identificado");
   // Avisos só do que precisa de olho humano: mais de uma marcada ou nenhuma marca clara.
   // Questão em branco também conta como sem marca clara. Uma marca nítida com um borrão ao lado não gera aviso.

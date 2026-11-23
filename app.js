@@ -169,6 +169,33 @@ const quandoBR = (iso) => iso ? new Date(iso).toLocaleString("pt-BR", { day: "2-
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const mesmoNome = (a, b) => !!a && !!b && Identificacao.normalizarNome(a) === Identificacao.normalizarNome(b);
 
+// ---- Alunos com o mesmo nome na turma (homônimos): só eles são separados pelo R.A.; os demais, pelo nome, como sempre.
+const soDig = (s) => String(s || "").replace(/\D/g, "");
+const _homs = new WeakMap();
+function homonimosDe(p) {
+  if (!p) return new Set();
+  if (_homs.has(p)) return _homs.get(p);
+  const conta = (lista) => { const c = {}; for (const n of lista) { const k = Identificacao.normalizarNome(n); if (k) c[k] = (c[k] || 0) + 1; } return c; };
+  const a = conta(p.nomes || []), b = conta((p.alunos || []).map(x => x.nome));
+  const s = new Set([...Object.keys(a), ...Object.keys(b)].filter(k => Math.max(a[k] || 0, b[k] || 0) > 1));
+  _homs.set(p, s);
+  return s;
+}
+const ehHomonimo = (nome, p = pacote) => homonimosDe(p).has(Identificacao.normalizarNome(nome));
+// Identidade do aluno: o nome; para homônimos, o nome e o R.A.
+function chaveAluno(nome, ra, p = pacote) {
+  const k = Identificacao.normalizarNome(nome);
+  return k && homonimosDe(p).has(k) ? k + "|" + soDig(ra) : k;
+}
+const mesmoAluno = (f, nome, ra, p = pacote) => mesmoNome(f.nome, nome) && chaveAluno(f.nome, f.ra, p) === chaveAluno(nome, ra, p);
+// Lista da turma da prova, um item por aluno ({nome, ra}); homônimos recebem cada um o seu R.A.
+function alunosDaProva(p) {
+  const sobra = {};
+  for (const a of p.alunos || []) (sobra[Identificacao.normalizarNome(a.nome)] ||= []).push(a.ra);
+  const nomes = p.nomes && p.nomes.length ? p.nomes : (p.alunos || []).map(a => a.nome);
+  return nomes.map(n => { const l = sobra[Identificacao.normalizarNome(n)]; return { nome: n, ra: l && l.length ? l.shift() : "" }; });
+}
+
 function irPara(tela) {
   for (const t of TELAS) $("#tela-" + t).hidden = t !== tela;
   document.body.dataset.tela = tela;                 // a barra de navegação aparece só nas telas iniciais
@@ -488,11 +515,10 @@ function desenharCalendario(ps) {
 function alunosDaDisciplina(provas) {
   const m = new Map();
   for (const p of provas) {
-    const ras = {}; for (const a of p.alunos || []) ras[a.nome] = a.ra;
-    for (const n of p.nomes && p.nomes.length ? p.nomes : (p.alunos || []).map(a => a.nome)) {
-      const k = Identificacao.normalizarNome(n);
-      const a = m.get(k) || { nome: n, ra: "" };
-      if (!a.ra && ras[n]) a.ra = ras[n];
+    for (const x of alunosDaProva(p)) {
+      const k = chaveAluno(x.nome, x.ra, p);
+      const a = m.get(k) || { nome: x.nome, ra: "" };
+      if (!a.ra && x.ra) a.ra = x.ra;
       m.set(k, a);
     }
   }
@@ -526,7 +552,7 @@ function desenharAlunos() {
     const fichas = provas.map(p => {
       const naLista = (p.nomes || []).some(n => mesmoNome(n, a.nome));
       if (!naLista) return "";
-      const f = (dadosLista.porHash[p.hash] || []).filter(f => mesmoNome(f.nome, a.nome)).sort((x, y) => y.quando.localeCompare(x.quando))[0];
+      const f = (dadosLista.porHash[p.hash] || []).filter(f => mesmoAluno(f, a.nome, a.ra, p)).sort((x, y) => y.quando.localeCompare(x.quando))[0];
       const rot = esc(infoProva(p).rotulo.replace(/^Prova\s*/i, "P"));
       if (f) return `<span class="nota-ficha">${rot} <b>${f.nota === null ? "–" : numBR(f.nota)}</b></span>`;
       const d = dataDe(p);
@@ -699,14 +725,14 @@ async function listar() {
   const ul = $("#lista"); ul.innerHTML = "";
   fs.sort((a, b) => (a.nome || "~").localeCompare(b.nome || "~", "pt"));
   const repetidos = {};
-  for (const f of fs) if (f.nome) { const k = Identificacao.normalizarNome(f.nome); repetidos[k] = (repetidos[k] || 0) + 1; }
+  for (const f of fs) if (f.nome) { const k = chaveAluno(f.nome, f.ra); repetidos[k] = (repetidos[k] || 0) + 1; }
   for (const f of fs) {
     const li = document.createElement("li"); li.className = "toque";
-    const rep = f.nome && repetidos[Identificacao.normalizarNome(f.nome)] > 1;
+    const rep = f.nome && repetidos[chaveAluno(f.nome, f.ra)] > 1;
     li.innerHTML = `<div class="nome"><span></span><small></small></div>
       ${f.conferir.length || rep ? `<span class="etiqueta alerta">${rep ? "repetida" : "conferir"}</span>` : ""}
       <span class="nota">${f.nota === null ? "–" : numBR(f.nota)}</span>`;
-    li.querySelector(".nome span").textContent = f.nome || `Sem nome · R.A. ${f.ra || "—"}`;
+    li.querySelector(".nome span").textContent = f.nome ? f.nome + (ehHomonimo(f.nome) ? ` · R.A. ${f.ra || "—"}` : "") : `Sem nome · R.A. ${f.ra || "—"}`;
     li.querySelector("small").textContent = [pacote.versoes.length > 1 ? `Tipo ${f.versao}` : "", quandoBR(f.quando)].filter(Boolean).join(" · ");
     li.onclick = () => abrirFolha(f); botaoAcessivel(li);
     ul.appendChild(li);
@@ -714,15 +740,14 @@ async function listar() {
   if (!fs.length) ul.innerHTML = `<li><div class="vazio">Nenhuma folha corrigida ainda.<br>Toque em <b style="display:inline;font-size:inherit">Corrigir com a câmera</b>.</div></li>`;
 
   // faltam
-  const ja = new Set(fs.map(f => Identificacao.normalizarNome(f.nome)).filter(Boolean));
-  const ras = {}; for (const a of pacote.alunos || []) ras[a.nome] = a.ra;
-  const faltam = (pacote.nomes || []).filter(n => !ja.has(Identificacao.normalizarNome(n)));
+  const ja = new Set(fs.filter(f => f.nome).map(f => chaveAluno(f.nome, f.ra)));
+  const faltam = alunosDaProva(pacote).filter(a => !ja.has(chaveAluno(a.nome, a.ra)));
   const uf = $("#faltam"); uf.innerHTML = "";
-  for (const n of faltam) {
+  for (const a of faltam) {
     const li = document.createElement("li");
     li.innerHTML = `<div class="nome"><span></span><small></small></div>`;
-    li.querySelector("span").textContent = n;
-    li.querySelector("small").textContent = ras[n] ? `R.A. ${ras[n]}` : "";
+    li.querySelector("span").textContent = a.nome;
+    li.querySelector("small").textContent = (a.ra ? `R.A. ${a.ra}` : "") + (ehHomonimo(a.nome) ? " · nome repetido na turma" : "");
     uf.appendChild(li);
   }
   if (!faltam.length) uf.innerHTML = `<li><div class="vazio">${(pacote.nomes || []).length ? "Todos os alunos da lista já têm folha corrigida." : "Esta prova não tem lista de alunos."}</div></li>`;
@@ -816,63 +841,77 @@ function abrirFolha(f) {
 const OUTRO_NOME = "__outro__";
 
 function prepararAluno(sel, outro, ra, nome, aoMudar) {
-  const nomes = pacote.nomes || [];
-  sel.innerHTML = `<option value="">— não identificado —</option>` + nomes.map(n => `<option>${esc(n)}</option>`).join("") +
+  const ops = opcoesAlunos();
+  sel.innerHTML = `<option value="">— não identificado —</option>` + ops.map(o => `<option value="${esc(o.valor)}">${esc(o.rotulo)}</option>`).join("") +
     `<option value="${OUTRO_NOME}">Digitar outro nome…</option>`;
-  const daLista = nome ? nomes.find(n => mesmoNome(n, nome)) : "";
-  sel.value = !nome ? "" : daLista || OUTRO_NOME;
+  // homônimos: escolhe a opção com o R.A. da folha; sem R.A. que confira, fica a primeira (e a folha já vai para "conferir")
+  const doNome = nome ? ops.filter(o => mesmoNome(o.nome, nome)) : [];
+  const daLista = doNome.find(o => !o.homonimo || soDig(o.ra) === soDig(ra.value)) || doNome[0];
+  sel.value = !nome ? "" : daLista ? daLista.valor : OUTRO_NOME;
   outro.value = nome && !daLista ? nome : "";
   outro.hidden = sel.value !== OUTRO_NOME;
   sel.onchange = () => {
     outro.hidden = sel.value !== OUTRO_NOME;
     if (!outro.hidden) outro.focus(); else sug.innerHTML = "";
-    const a = (pacote.alunos || []).find(a => a.nome === sel.value);
-    if (a) ra.value = a.ra;
+    const o = ops.find(o => o.valor === sel.value);
+    if (o && o.ra) ra.value = o.ra;
     aoMudar && aoMudar();
   };
+  ra.oninput = () => { aoMudar && aoMudar(); };   // homônimos: o R.A. decide qual dos dois é
   // sugestões da turma enquanto digita ("ana" ou "ana sou" já acham "Ana Maria Souza")
   let sug = outro.nextElementSibling;
   if (!sug || !sug.classList.contains("sugestoes")) {
     sug = document.createElement("div"); sug.className = "sugestoes"; outro.after(sug);
   }
-  const escolher = (n) => { sel.value = n; outro.value = ""; sug.innerHTML = ""; sel.onchange(); };
+  const escolher = (v) => { sel.value = v; outro.value = ""; sug.innerHTML = ""; sel.onchange(); };
   const sugerir = () => {
     const achados = outro.hidden ? [] : nomesParecidos(outro.value);
     sug.innerHTML = "";
-    for (const n of achados.slice(0, 6)) {
-      const b = document.createElement("button"); b.type = "button"; b.className = "mini"; b.textContent = n;
-      b.onclick = () => escolher(n);
+    for (const o of achados.slice(0, 6)) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "mini"; b.textContent = o.rotulo;
+      b.onclick = () => escolher(o.valor);
       sug.appendChild(b);
     }
     if (achados.length > 6) sug.insertAdjacentHTML("beforeend", `<small>e mais ${achados.length - 6}: digite mais letras</small>`);
   };
   outro.oninput = () => { sugerir(); aoMudar && aoMudar(); };
   outro.onchange = () => {                       // um só aluno da turma combina: escolhe ele (nome completo)
-    const n = nomeDaTurma(outro.value);
-    if (n) escolher(n);
+    const o = nomeDaTurma(outro.value);
+    if (o) escolher(o.valor);
   };
   sugerir();
+}
+
+// Opções da lista de alunos. Homônimos aparecem com o R.A. ("Ana Souza · R.A. 123"), e o valor leva o R.A.
+const SEP_RA = "\u0001";
+function opcoesAlunos() {
+  return alunosDaProva(pacote).map(a => {
+    const homonimo = ehHomonimo(a.nome);
+    return { nome: a.nome, ra: a.ra, homonimo, valor: homonimo ? a.nome + SEP_RA + a.ra : a.nome,
+             rotulo: homonimo ? `${a.nome} · R.A. ${a.ra || "—"}` : a.nome };
+  });
 }
 
 // Alunos da turma cujo nome combina com o texto: cada palavra digitada é o começo de uma palavra do nome.
 function nomesParecidos(texto) {
   const partes = Identificacao.normalizarNome(texto).split(" ").filter(Boolean);
   if (!partes.length) return [];
-  return (pacote.nomes || []).filter(n => {
-    const pal = Identificacao.normalizarNome(n).split(" ");
+  return opcoesAlunos().filter(o => {
+    const pal = Identificacao.normalizarNome(o.nome).split(" ");
     return partes.every(p => pal.some(w => w.startsWith(p)));
   });
 }
 
-// O nome completo da turma, se o texto digitado for dele (igual, ou o único que combina); senão, null.
+// A opção da turma, se o texto digitado for dela (igual e sem homônimo, ou a única que combina); senão, null.
 function nomeDaTurma(texto) {
-  const igual = (pacote.nomes || []).find(n => mesmoNome(n, texto));
-  if (igual) return igual;
+  const iguais = opcoesAlunos().filter(o => mesmoNome(o.nome, texto));
+  if (iguais.length === 1) return iguais[0];
+  if (iguais.length > 1) return null;
   const achados = nomesParecidos(texto);
   return achados.length === 1 ? achados[0] : null;
 }
 
-const nomeEscolhido = (sel, outro) => sel.value !== OUTRO_NOME ? sel.value
+const nomeEscolhido = (sel, outro) => sel.value !== OUTRO_NOME ? sel.value.split(SEP_RA)[0]
   : nomeDaTurma(outro.value) || outro.value.trim().replace(/\s+/g, " ");
 
 // Opções de cada questão (as bolinhas da folha)
@@ -917,7 +956,7 @@ function editarFolha(f) {
   };
   const repetida = async () => {
     const nome = nomeEscolhido(sel, outro);
-    const outra = nome ? (await folhasDa(pacote.hash)).find(x => x.id !== f.id && mesmoNome(x.nome, nome)) : null;
+    const outra = nome ? (await folhasDa(pacote.hash)).find(x => x.id !== f.id && mesmoAluno(x, nome, ra.value.trim())) : null;
     $("#e-ja").hidden = !outra;
     if (outra) $("#e-ja").innerHTML = `<b>${esc(outra.nome)} já tem outra folha</b><br>Nota ${outra.nota === null ? "–" : numBR(outra.nota)} · guardada ${quandoBR(outra.quando)}. Guardar substitui aquela folha por esta.`;
     return outra;
@@ -968,6 +1007,7 @@ function editarFolha(f) {
   $("#f-salvar").onclick = async () => {
     const nome = nomeEscolhido(sel, outro);
     if (sel.value === OUTRO_NOME && !nome) { outro.focus(); return status("Digite o nome do aluno.", true); }
+    if (nome && ehHomonimo(nome) && !soDig(ra.value)) { ra.focus(); return status(`Há mais de um aluno chamado ${nome} na turma: escolha na lista o que tem o R.A. certo.`, true); }
     const outra = await repetida();
     if (outra && !(await perguntar(`Substituir a folha de ${outra.nome}?`,
         `Ela tem nota ${outra.nota === null ? "–" : numBR(outra.nota)}. Fica só esta folha para ${outra.nome}.`,
@@ -980,7 +1020,8 @@ function editarFolha(f) {
       conferir: [], editada: "celular",            // revista à mão: sai da lista "conferir"
     };
     delete nova.origem;                             // vinda do computador e mexida aqui: passa a ser do aparelho
-    const mudouNome = Identificacao.normalizarNome(nome) !== Identificacao.normalizarNome(f.nome);
+    // (homônimos: trocar o R.A. também muda o arquivo no GitHub)
+    const mudouNome = chaveAluno(nome, ra.value.trim()) !== chaveAluno(f.nome, f.ra);
     if (mudouNome) {
       // o arquivo no GitHub é escolhido pelo nome: o antigo vira "apagado" e a folha vai para o do nome novo
       if (f.gh || f.nome || f.uid) window.dispatchEvent(new CustomEvent("folha-apagada", { detail: f }));
@@ -1074,7 +1115,8 @@ function atualizarNota() {
 async function verificarRepetida() {
   if (!atual) return;
   const res = atual, nome = nomeEscolhido($("#r-aluno"), $("#r-aluno-outro"));
-  const ant = nome ? (await folhasDa(pacote.hash)).filter(f => mesmoNome(f.nome, nome)).sort((a, b) => b.quando.localeCompare(a.quando))[0] : null;
+  const raAgora = $("#r-ra").value.trim();
+  const ant = nome ? (await folhasDa(pacote.hash)).filter(f => mesmoAluno(f, nome, raAgora)).sort((a, b) => b.quando.localeCompare(a.quando))[0] : null;
   if (atual !== res) return;
   res.anterior = ant || null;
   const caixa = $("#r-ja");
@@ -1174,7 +1216,8 @@ async function salvarAtual() {
   if ($("#r-aluno").value === OUTRO_NOME && !nome) { $("#r-aluno-outro").focus(); status("Digite o nome do aluno.", true); return false; }
   const ra = $("#r-ra").value.trim();
   const conferir = atual.conferir.filter(a => !/aluno não identificado/.test(a) || !nome);
-  const anteriores = nome ? (await folhasDa(pacote.hash)).filter(f => mesmoNome(f.nome, nome)) : [];
+  if (nome && ehHomonimo(nome) && !soDig(ra)) { $("#r-ra").focus(); status(`Há mais de um aluno chamado ${nome} na turma: escolha na lista o que tem o R.A. certo.`, true); return false; }
+  const anteriores = nome ? (await folhasDa(pacote.hash)).filter(f => mesmoAluno(f, nome, ra)) : [];
   const folha = {
     hash: pacote.hash, quando: new Date().toISOString(), nome, ra, versao: atual.versao,
     respostas: atual.leitura.respostas.map((r, i) => ({ n: r.n, resp: n.resps[i], sit: n.resps[i] === r.resp ? r.sit : "" })),

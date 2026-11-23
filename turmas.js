@@ -72,6 +72,13 @@
     return b;
   }
 
+  // Dois alunos com o mesmo nome: o app e o lançamento das notas acham o aluno pelo nome e confundiriam as folhas.
+  function avisoHomonimos(t) {
+    const rep = t.homonimos || [];
+    if (!rep.length) return "";
+    return `<div class="turma-homonimos" role="note">Atenção: nome repetido na turma (${esc(rep.join(", "))}). O app separa esses alunos pelo R.A.: confira o R.A. nas folhas deles.</div>`;
+  }
+
   // ------------------------------------------------------------------ cartões das turmas (vista Turmas)
   function cartaoTurma(t) {
     const div = document.createElement("div");
@@ -79,6 +86,7 @@
     const aula = proximaDa(t, "aula"), prova = proximaDa(t, "prova"), provas = provasDa(t);
     div.innerHTML = `<button type="button" class="disc-topo turma-topo">${capaTurma(t)}<div><div class="nome">${esc(t.disciplina)}</div>
         <div class="disc">${esc([t.instituicao, t.periodo + "º período", t.semestre].join(" · "))}</div></div></button>
+      ${avisoHomonimos(t)}
       <div class="turma-prox">
         ${aula ? `<div><span>Próxima aula</span><b>${esc(quandoTexto(aula))}</b></div>` : ""}
         ${prova ? `<div><span>Próxima prova</span><b>${esc(prova.rotulo || "Prova")} · ${esc(quandoTexto(prova))}</b></div>` : ""}
@@ -162,6 +170,7 @@
   function desenharAlunosTurma(t, corpo) {
     const busca = Identificacao.normalizarNome($("#turma-busca").value || ""), buscaRa = ($("#turma-busca").value || "").trim();
     const ul = document.createElement("ul"); ul.className = "itens turma-alunos";
+    if ((t.homonimos || []).length) corpo.insertAdjacentHTML("beforeend", avisoHomonimos(t));
     for (const a of t.alunos) {
       if (busca && !Identificacao.normalizarNome(a.nome).includes(busca) && !(buscaRa && String(a.ra).includes(buscaRa))) continue;
       const fichas = t.colunas.map((c, j) => PRINCIPAIS.test(c.nome) && a.notas[j] !== "" ? `<span class="nota-ficha">${esc(c.nome.replace(/^Prova\s*/i, "P").replace(/^Trabalho\s*/i, "T"))} <b>${esc(valorBR(a.notas[j]))}</b></span>` : "").join("");
