@@ -192,6 +192,15 @@ function status(txt, erro = false, tipo = "info") {
 }
 
 // Pergunta feita na própria página. botoes: [{ rotulo, valor, classe }]; tocar fora = null.
+// Linha ou cartão que se toca (li, div): o VoiceOver passa a anunciá-lo como botão, e Enter ou espaço o acionam.
+function botaoAcessivel(el) { el.setAttribute("role", "button"); el.tabIndex = 0; return el; }
+document.addEventListener("keydown", (e) => {
+  const el = e.target;
+  if ((e.key === "Enter" || e.key === " ") && el && el.getAttribute && el.getAttribute("role") === "button" && !/^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) {
+    e.preventDefault(); el.click();
+  }
+});
+
 function perguntar(titulo, texto, botoes) {
   return new Promise((ok) => {
     const d = $("#dialogo");
@@ -207,6 +216,7 @@ function perguntar(titulo, texto, botoes) {
     }
     d.onclick = (e) => { if (e.target === d) fim(null); };
     d.hidden = false;
+    const primeiro = caixa.querySelector("button"); if (primeiro) primeiro.focus({ preventScroll: true });
   });
 }
 
@@ -393,7 +403,7 @@ function desenharDisciplinas(ps) {
       const suas = dadosLista.porHash[p.hash] || [], d = dataDe(p);
       const li = document.createElement("li"); li.className = "toque";
       li.innerHTML = `<div class="nome"><span>${esc(infoProva(p).rotulo)}</span><small>${d ? diaBR(d) + " · " : ""}${corrigidas(suas)} de ${totalAlunos(p)} corrigidas</small></div>`;
-      li.onclick = () => abrirPacote(p);
+      li.onclick = () => abrirPacote(p); botaoAcessivel(li);
       ul.appendChild(li);
     }
     div.querySelector(".ver-alunos").onclick = () => abrirAlunos(k, "provas");
@@ -698,7 +708,7 @@ async function listar() {
       <span class="nota">${f.nota === null ? "–" : numBR(f.nota)}</span>`;
     li.querySelector(".nome span").textContent = f.nome || `Sem nome · R.A. ${f.ra || "—"}`;
     li.querySelector("small").textContent = [pacote.versoes.length > 1 ? `Tipo ${f.versao}` : "", quandoBR(f.quando)].filter(Boolean).join(" · ");
-    li.onclick = () => abrirFolha(f);
+    li.onclick = () => abrirFolha(f); botaoAcessivel(li);
     ul.appendChild(li);
   }
   if (!fs.length) ul.innerHTML = `<li><div class="vazio">Nenhuma folha corrigida ainda.<br>Toque em <b style="display:inline;font-size:inherit">Corrigir com a câmera</b>.</div></li>`;
@@ -772,7 +782,7 @@ function abrirFolha(f) {
   const resp = (f.respostas || []).map((r, i) => {
     const certa = String(((v && v.respostas[i]) || {}).resposta || "");
     const ok = certa === "*" || (r.resp && r.resp.length === 1 && certa.includes(r.resp));
-    return `<div class="q${ok ? "" : " errada"}${r.sit ? " duvida" : ""}"><span>${r.n}</span><b>${esc(r.resp || "–")}</b></div>`;
+    return `<div class="q ${ok ? "certa" : "errada"}${r.sit ? " duvida" : ""}" role="img" aria-label="Questão ${r.n}: ${r.resp ? "marcou " + esc(r.resp) : "em branco"}, ${ok ? "certa" : "errada"}${r.sit ? ", a conferir" : ""}"><span>${r.n}</span><b>${esc(r.resp || "–")}</b></div>`;
   }).join("");
   const diss = (f.notas_diss || []).map((n, i) => `<div class="q" style="background:var(--fundo)"><span>D${i + 1}</span><b style="color:var(--texto)">${n === null ? "?" : numBR(n)}</b><small>/${numBR((pacote.dissertativas || [])[i] ?? 0)}</small></div>`).join("");
   $("#f-corpo").innerHTML = `
@@ -1013,8 +1023,10 @@ function resumoRespostas() {
     const l = linhas[i], v = l.dataset.valor, certa = String(versao.respostas[i].resposta || "");
     const ok = certa === "*" || (v.length === 1 && certa.includes(v));
     const d = document.createElement("div");
-    d.className = "q" + (ok ? "" : " errada") + (l.classList.contains("duvida") ? " duvida" : "");
+    d.className = "q " + (ok ? "certa" : "errada") + (l.classList.contains("duvida") ? " duvida" : "");
     d.innerHTML = `<span>${r.n}</span><b>${v || "–"}</b>`;
+    d.setAttribute("role", "button"); d.tabIndex = 0;
+    d.setAttribute("aria-label", `Questão ${r.n}: ${v ? "marcou " + v : "em branco"}, ${ok ? "certa" : "errada"}. Toque para ver a questão.`);
     d.onclick = () => {
       const q = questaoDaFolha(atual.versao, r.n), alvo = $("#q-detalhe");
       for (const x of caixa.children) x.classList.remove("aberta");

@@ -121,7 +121,7 @@
   .hist { display: flex; align-items: flex-end; gap: 6px; height: 90px; margin: 8px 0 4px; }
   .hist div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; font-size: 12px; color: var(--fraco); }
   .hist i { display: block; width: 100%; background: var(--destaque); border-radius: 4px 4px 0 0; min-height: 2px; }
-  .hist-rot { display: flex; gap: 6px; font-size: 11px; color: var(--fraco); }
+  .hist-rot { display: flex; gap: 6px; font-size: 12px; color: var(--fraco); }
   .hist-rot span { flex: 1; text-align: center; }
   .erros li { min-height: 44px; }
   .erros .barra-prog { flex: 2; }
@@ -136,7 +136,8 @@
   #aviso.ok { background: var(--verde); }
   #aviso.erro { background: var(--vermelho); }
   #aviso .txt { flex: 1; }
-  #aviso button { background: none; border: 0; color: #fff; font-size: 20px; line-height: 1; padding: 0 2px; opacity: .8; }
+  #aviso button { background: none; border: 0; color: #fff; font-size: 24px; line-height: 1; flex: none; width: 44px; height: 44px; margin: -12px -12px -12px 0;
+                  display: grid; place-items: center; opacity: .9; cursor: pointer; }
   .girando { width: 18px; height: 18px; border-radius: 50%; border: 3px solid rgba(255,255,255,.35); border-top-color: #fff; animation: gira .8s linear infinite; flex: none; margin-top: 1px; }
   @keyframes gira { to { transform: rotate(360deg); } }
 
@@ -172,6 +173,16 @@
   .q.errada { background: var(--vermelho-claro); }
   .q.duvida { outline: 2px solid var(--laranja); outline-offset: -1px; }
   .q.aberta { border-color: var(--destaque); }
+  /* acessibilidade (item 10 da avaliação) */
+  .q.certa b::after { content: "✓"; font-size: 12px; margin-left: 3px; vertical-align: 2px; }
+  .q.errada b::after { content: "✗"; font-size: 12px; margin-left: 3px; vertical-align: 2px; }
+  /* área de toque de pelo menos 44 px, sem mudar o desenho dos botões pequenos */
+  .mini, .barra .voltar, .segmentos button, .ficha, .ini-cartao .mini { position: relative; }
+  .mini::after, .barra .voltar::after, .segmentos button::after, .ficha::after {
+    content: ""; position: absolute; left: -2px; right: -2px; top: 50%; height: 44px; min-height: 100%; transform: translateY(-50%); }
+  [role="button"]:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--destaque); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
   .q span { font-size: 12px; color: var(--fraco); }
   .q b { font-size: 17px; }
   .q.errada b { color: var(--vermelho); }
@@ -262,7 +273,7 @@
   .capa { display: var(--capa, none); flex: none; width: 56px; height: 56px; border-radius: var(--raio-capa, 10px); flex-direction: column; justify-content: center;
           align-items: center; text-align: center; overflow: hidden; color: #fff; font-weight: 800; font-size: 17px; line-height: 1.05; padding: 4px;
           background: linear-gradient(140deg, hsl(var(--h) 72% 58%), hsl(calc(var(--h) + 45) 70% 38%)); }
-  .capa small { font-size: 9px; font-weight: 600; opacity: .9; margin-top: 3px; }
+  .capa small { font-size: 10.5px; font-weight: 600; opacity: .9; margin-top: 3px; }
   .grande-capa { width: 168px; height: 168px; margin: 4px auto 14px; font-size: 46px; border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.25); }
   .grande-capa small { font-size: 14px; }
   .disc-topo { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
@@ -563,7 +574,7 @@
               background: color-mix(in srgb, var(--cartao) 92%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
               border-top: 1px solid var(--borda); }
   .nav-abas button { flex: 1; max-width: 120px; min-height: 50px; border: 0; background: none; display: flex; flex-direction: column; align-items: center;
-                     gap: 2px; padding: 4px 0; font-size: 11px; color: var(--fraco); cursor: pointer; }
+                     gap: 2px; padding: 4px 0; font-size: 12px; color: var(--fraco); cursor: pointer; }
   .nav-abas button.ativo { color: var(--destaque); }
   .nav-flutuante { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 14px); z-index: 20; gap: 4px;
                    padding: 6px; border-radius: 30px; background: color-mix(in srgb, var(--cartao) 88%, transparent);
@@ -602,7 +613,7 @@
   [data-tema="vidro"] .ini-numeros > * { background: var(--vidro-painel, var(--cartao)); }
   .ini-numeros button { cursor: pointer; }
   .ini-numeros b { display: block; font-size: 18px; line-height: 1.1; }
-  .ini-numeros small { display: block; font-size: 11px; color: var(--fraco); margin-top: 1px; }
+  .ini-numeros small { display: block; font-size: 12px; color: var(--fraco); margin-top: 1px; }
   .ini .ini-cartao { padding: 10px 12px; margin-bottom: 10px; }
   .ini-cartao .titulo-linha { margin-bottom: 2px; }
   .ini-cartao .mini { min-height: 30px; padding: 3px 12px; font-size: 13px; }
@@ -611,7 +622,7 @@
   .ini-linha + .ini-linha { border-top: 1px solid var(--linha); }
   .ini-data { flex: none; width: 38px; height: 40px; border-radius: 9px; background: var(--azul-claro); color: var(--destaque);
               display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
-  .ini-data b { font-size: 16px; } .ini-data small { font-size: 10px; text-transform: uppercase; margin-top: 2px; }
+  .ini-data b { font-size: 16px; } .ini-data small { font-size: 11px; text-transform: uppercase; margin-top: 2px; }
   .ini-meio { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   .ini-nome { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ini-meio small { color: var(--fraco); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -622,7 +633,7 @@
   /* calendário do mês */
   .ini-mes { font-size: 13px; font-weight: 600; margin: 2px 2px 6px; }
   .ini-cal .ini-grade { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
-  .ini-sem { font-size: 11px; color: var(--fraco); padding-bottom: 2px; }
+  .ini-sem { font-size: 12px; color: var(--fraco); padding-bottom: 2px; }
   .ini-cal .ini-grade button { aspect-ratio: 1; max-height: 34px; border: 0; border-radius: 50%; background: none; color: var(--texto); font: inherit;
                                font-size: 13px; cursor: pointer; display: grid; place-items: center; margin: 0 auto; width: 100%; max-width: 34px; }
   .ini-cal .ini-grade button.tem { background: var(--destaque); color: #fff; font-weight: 700; }
@@ -631,7 +642,7 @@
   .ini-cal .ini-grade button { position: relative; }
   .ini-cal .ini-grade button.entrega::after { content: ""; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%);
                                               width: 7px; height: 7px; border-radius: 50%; background: #f08a24; box-shadow: 0 0 0 1.5px #fff; }
-  .ini-legenda { display: flex; gap: 14px; justify-content: center; margin-top: 6px; font-size: 11px; color: var(--fraco); }
+  .ini-legenda { display: flex; gap: 14px; justify-content: center; margin-top: 6px; font-size: 12px; color: var(--fraco); }
   .ini-legenda i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
   .ini-legenda .lg-prova { background: var(--destaque); } .ini-legenda .lg-entrega { background: #f08a24; }
   .ini-data.trabalho { background: #fdebd6; color: #b25a00; }
@@ -922,8 +933,8 @@
   </footer>
 </section>
 
-<div id="aviso" hidden><span class="girando" hidden></span><span class="txt"></span><button type="button" aria-label="Fechar">×</button></div>
-<div id="dialogo" hidden><div class="caixa"><h3></h3><p></p><div class="botoes"></div></div></div>
+<div id="aviso" hidden role="status" aria-live="polite"><span class="girando" hidden></span><span class="txt"></span><button type="button" aria-label="Fechar o aviso">×</button></div>
+<div id="dialogo" hidden role="alertdialog" aria-modal="true" aria-labelledby="dialogo-titulo" aria-describedby="dialogo-texto"><div class="caixa"><h3 id="dialogo-titulo"></h3><p id="dialogo-texto"></p><div class="botoes"></div></div></div>
 
 <div id="vivo" hidden>
   <div id="vivo-camera">

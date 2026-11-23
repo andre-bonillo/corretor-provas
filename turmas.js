@@ -90,6 +90,7 @@
         <button type="button" class="mini" data-t="provas">${provas.length} prova${provas.length === 1 ? "" : "s"}</button>
       </div>`;
     div.querySelector(".turma-topo").onclick = () => abrir(t.id, "agenda");
+    botaoAcessivel(div.querySelector(".turma-topo"));
     for (const b of div.querySelectorAll("[data-t]")) b.onclick = () => abrir(t.id, b.dataset.t);
     return div;
   }
@@ -167,6 +168,7 @@
       const li = document.createElement("li"); li.className = "toque";
       li.innerHTML = `<div class="nome"><span>${esc(a.nome)}</span><small>${a.ra ? "R.A. " + esc(a.ra) : "sem R.A."}</small><div class="notas-aluno">${fichas}</div></div>`;
       li.onclick = () => { alunoAberto = alunoAberto === a.nome ? "" : a.nome; desenhar(); };
+      botaoAcessivel(li); li.setAttribute("aria-expanded", alunoAberto === a.nome ? "true" : "false");
       ul.appendChild(li);
       if (alunoAberto === a.nome) {
         const det = document.createElement("li"); det.className = "turma-detalhe";
@@ -210,6 +212,7 @@
       const tops = (a.topicos || []).map(x => x.replace(/^[IVXLC]+\.\s*/, "")).join(" · ");
       li.innerHTML = `<div class="nome"><span>${esc(a.titulo)}</span><small>${esc(a.ementa || tops || (a.aula ? "" : "Só o roteiro"))}</small></div>`;
       li.onclick = () => { aulaAberta = k; verRoteiro = !a.aula; desenhar(); window.scrollTo(0, 0); };
+      botaoAcessivel(li);
       ul.appendChild(li);
     });
     if (!t.aulas.length) ul.innerHTML = `<li><div class="vazio">Nenhuma aula na pasta da disciplina.</div></li>`;
