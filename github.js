@@ -24,15 +24,27 @@
   function erro(msg, extra) { return Object.assign(new Error(msg), extra || {}); }
 
   async function api(url, opc = {}) {
+    // com sinal fraco, um pedido pode ficar parado: desiste depois de 30 s e tenta na próxima rodada
+    const ctl = new AbortController(), tempo = setTimeout(() => ctl.abort(), 30000);
     const r = await fetch(url, {
-      cache: "no-store", method: opc.method || "GET", body: opc.body,
+      signal: ctl.signal, cache: "no-store", method: opc.method || "GET", body: opc.body,
       headers: { Authorization: "Bearer " + lerChave(), "X-GitHub-Api-Version": "2022-11-28",
                  Accept: opc.bruto ? "application/vnd.github.raw" : "application/vnd.github+json",
                  ...(opc.body ? { "Content-Type": "application/json" } : {}) },
+    }).catch((e) => {
+      clearTimeout(tempo);
+      if (e && e.name === "AbortError") throw erro("o GitHub demorou demais para responder (sinal fraco?)", { semRede: true });
+      if (e instanceof TypeError) throw erro("sem conexão com a internet", { semRede: true });
+      throw e;
     });
-    if (r.status === 401) throw erro("a chave do GitHub não vale mais (vencida ou apagada)", { chave: true });
-    if (!r.ok) throw erro("o GitHub respondeu " + r.status, { status: r.status });
-    return opc.bruto ? r.text() : r.json();
+    try {
+      if (r.status === 401) throw erro("a chave do GitHub não vale mais (vencida ou apagada)", { chave: true });
+      if (!r.ok) throw erro("o GitHub respondeu " + r.status, { status: r.status });
+      return await (opc.bruto ? r.text() : r.json());       // o limite de 30 s vale também para receber o conteúdo
+    } catch (e) {
+      if (e && e.name === "AbortError") throw erro("o GitHub demorou demais para responder (sinal fraco?)", { semRede: true });
+      throw e;
+    } finally { clearTimeout(tempo); }
   }
 
   async function conferirAcesso() {
@@ -148,7 +160,7 @@
         const visto = await ler("config", "ghf:" + path).catch(() => null);
         if (visto && visto.quando === f.quando) continue;
         try {
-          const sha = await enviar(path, semId(f), remoto[path], "Folha corrigida no celular");
+          const sha = await enviar(path, semId(await comImagem(f)), remoto[path], "Folha corrigida no celular");
           remoto[path] = sha;
           await guardar("config", { sha, quando: f.quando }, "ghf:" + path);
           res.enviadas++;
@@ -266,7 +278,7 @@
         status(f.enviadas ? `${f.enviadas} folha(s) enviada(s) ao GitHub.` : "Tudo em dia.", false, "ok");
       }
     } catch (e) {
-      const semRede = e instanceof TypeError;            // sem internet ou sinal fraco: tenta de novo quando voltar
+      const semRede = !!(e && (e.semRede || e instanceof TypeError || e.name === "AbortError"));            // sem internet ou sinal fraco: tenta de novo quando voltar
       problema = semRede ? "sem conexão com o GitHub na última tentativa" : e.message;
       mostrar();
       window.dispatchEvent(new Event("sincronia-mudou"));

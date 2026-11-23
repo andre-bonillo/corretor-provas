@@ -13,12 +13,32 @@ let pacote = null, atual = null, modelosProntos = null;
 // pede ao navegador que não apague os dados do app quando faltar espaço (no iPhone, vale para o app da tela de início)
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(() => {}); } catch (e) {}
 const banco = new Promise((ok, falha) => {
-  const r = indexedDB.open("corretor-provas", 1);
-  r.onupgradeneeded = () => {
-    r.result.createObjectStore("pacotes", { keyPath: "hash" });
-    r.result.createObjectStore("folhas", { keyPath: "id", autoIncrement: true }).createIndex("hash", "hash");
-    r.result.createObjectStore("config");
+  // versão 2: a foto de cada folha fica numa loja à parte ("imagens", chave = id da folha), para que as listas,
+  // o Início e a sincronização leiam só os dados pequenos (nome, respostas, nota) e o app não pese com o semestre.
+  const r = indexedDB.open("corretor-provas", 2);
+  r.onupgradeneeded = (e) => {
+    const db = r.result, t = r.transaction;
+    if (e.oldVersion < 1) {
+      db.createObjectStore("pacotes", { keyPath: "hash" });
+      db.createObjectStore("folhas", { keyPath: "id", autoIncrement: true }).createIndex("hash", "hash");
+      db.createObjectStore("config");
+    }
+    if (e.oldVersion < 2) {
+      const imgs = db.createObjectStore("imagens");
+      t.objectStore("folhas").openCursor().onsuccess = (ev) => {      // muda as fotos já guardadas para a loja nova
+        const c = ev.target.result;
+        if (!c) return;
+        const f = c.value;
+        if ("imagem" in f) {
+          if (f.imagem) imgs.put(f.imagem, f.id);
+          delete f.imagem;
+          c.update(f);
+        }
+        c.continue();
+      };
+    }
   };
+  r.onblocked = () => { try { status("Feche as outras janelas do app para terminar a atualização.", true); } catch (e) {} };
   r.onsuccess = () => ok(r.result);
   r.onerror = () => falha(r.error);
 });
@@ -33,9 +53,39 @@ async function tx(loja, modo, f) {
     t.onabort = () => falha(t.error || new Error("a gravação foi cancelada; o armazenamento do aparelho pode estar cheio"));
   });
 }
-const guardar = (loja, v, k) => tx(loja, "readwrite", s => s.put(v, k));
+// Folha com foto: os dados vão para "folhas" e a foto para "imagens", na mesma gravação.
+// Folha sem o campo "imagem" (lida da lista) é gravada sem mexer na foto que já existe.
+async function guardarFolha(v) {
+  const { imagem, ...dados } = v;
+  const db = await banco;
+  return new Promise((ok, falha) => {
+    const t = db.transaction(["folhas", "imagens"], "readwrite");
+    const req = t.objectStore("folhas").put(dados);
+    req.onsuccess = () => { if (imagem) t.objectStore("imagens").put(imagem, req.result); else t.objectStore("imagens").delete(req.result); };
+    t.oncomplete = () => ok(req.result);
+    t.onerror = () => falha(t.error);
+    t.onabort = () => falha(t.error || new Error("a gravação foi cancelada; o armazenamento do aparelho pode estar cheio"));
+  });
+}
+const guardar = (loja, v, k) => loja === "folhas" && v && "imagem" in v ? guardarFolha(v) : tx(loja, "readwrite", s => s.put(v, k));
 const ler = (loja, k) => tx(loja, "readonly", s => s.get(k));
-const apagar = (loja, k) => tx(loja, "readwrite", s => s.delete(k));
+const apagar = async (loja, k) => {
+  const r = await tx(loja, "readwrite", s => s.delete(k));
+  if (loja === "folhas") await tx("imagens", "readwrite", s => s.delete(k)).catch(() => {});
+  return r;
+};
+// A foto de uma folha (só quando é preciso: ao abrir a folha, ao exportar, ao enviar ao GitHub).
+const imagemDa = async (f) => f.imagem || (f.id != null ? await tx("imagens", "readonly", s => s.get(f.id)).catch(() => null) : null) || "";
+const comImagem = async (f) => { const imagem = await imagemDa(f); return imagem ? { ...f, imagem } : { ...f }; };
+// Mostra a foto da folha aberta, se houver (o quadro fica escondido até a foto chegar).
+async function mostrarFotoFolha(f) {
+  const caixa = $("#f-corpo .foto-folha");
+  if (!caixa) return;
+  const img = await imagemDa(f);
+  if (!img || !caixa.isConnected) return;
+  caixa.querySelector("img").src = img;
+  caixa.hidden = false;
+}
 const folhasDa = (hash) => tx("folhas", "readonly", s => s.index("hash").getAll(hash));
 
 // ---------------------------------------------------------------------------
@@ -158,6 +208,15 @@ function perguntar(titulo, texto, botoes) {
     d.onclick = (e) => { if (e.target === d) fim(null); };
     d.hidden = false;
   });
+}
+
+// Carrega os modelos de leitura uma vez, quando forem precisos (ao abrir uma prova ou ler uma folha).
+function prepararModelos() {
+  if (!modelosProntos) {
+    modelosProntos = Identificacao.carregarModelos(BASE, (t) => estadoLeitura(t)).then(() => estadoLeitura(""));
+    modelosProntos.catch(e => { modelosProntos = null; estadoLeitura("Não consegui carregar os modelos de leitura: " + e.message, true); });
+  }
+  return modelosProntos;
 }
 
 function estadoLeitura(txt, erro = false) {
@@ -500,6 +559,7 @@ function mostrarDataProva() {
 }
 
 async function abrirPacote(p) {
+  prepararModelos().catch(() => {});                 // começa a carregar a leitura enquanto a prova abre
   if (!p || p.tipo !== "gerador-de-provas/celular") throw new Error("Este não é um arquivo da prova para o celular (… - Celular (….json).");
   pacote = p;
   await guardar("pacotes", p);
@@ -721,8 +781,9 @@ function abrirFolha(f) {
       <div class="det">${v && v.respostas.length ? `${f.acertos} de ${v.respostas.length} acertos` : ""}</div></div></div>
     ${resp ? `<div class="cartao"><span class="rotulo">Respostas</span><div class="grade">${resp}</div></div>` : ""}
     ${diss ? `<div class="cartao"><span class="rotulo">Dissertativas</span><div class="grade">${diss}</div></div>` : ""}
-    ${f.imagem ? `<div class="cartao"><span class="rotulo">Folha lida</span><img class="folha" alt="Folha lida" src="${f.imagem}"></div>` : ""}
+    <div class="cartao foto-folha" hidden><span class="rotulo">Folha lida</span><img class="folha" alt="Folha lida"></div>
     <p class="ajuda">Para mudar o aluno, uma resposta ou a nota de uma dissertativa, toque em <b style="display:inline">Editar</b>.</p>`;
+  mostrarFotoFolha(f);
   $("#f-acoes-ver").hidden = false; $("#f-acoes-editar").hidden = true;
   $("#f-editar").onclick = () => editarFolha(f);
   $("#f-apagar").onclick = async () => {
@@ -832,7 +893,8 @@ function editarFolha(f) {
     <div class="cartao"><div class="placar"><div class="nota" id="e-nota"></div><div class="det" id="e-det"></div></div></div>
     ${vals.length ? `<div class="cartao"><span class="rotulo">Respostas · toque para mudar; de novo, para deixar em branco</span><div id="e-respostas"></div></div>` : ""}
     ${nd ? `<div class="cartao"><span class="rotulo">Dissertativas</span><div class="grade" id="e-diss"></div></div>` : ""}
-    ${f.imagem ? `<div class="cartao"><span class="rotulo">Folha lida</span><img class="folha" alt="Folha lida" src="${f.imagem}"></div>` : ""}`;
+    <div class="cartao foto-folha" hidden><span class="rotulo">Folha lida</span><img class="folha" alt="Folha lida"></div>`;
+  mostrarFotoFolha(f);
   const sel = $("#e-aluno"), outro = $("#e-aluno-outro"), ra = $("#e-ra");
   ra.value = f.ra || "";
   const conta = () => {
@@ -1140,7 +1202,7 @@ async function processarFoto(arq) {
   $("#passo-resultado").hidden = true;
   try {
     status("Preparando a leitura…", false, "lendo");
-    await modelosProntos;
+    await prepararModelos();
     status("Lendo a folha…", false, "lendo");
     await new Promise(r => setTimeout(r, 30));
     const gray = await cinzaDoArquivo(arq);
@@ -1158,7 +1220,8 @@ async function processarFoto(arq) {
 
 // Arquivo de resultados da prova aberta (o mesmo formato lido pelo corrigir.py / lancar.bat).
 async function montarExportacao() {
-  const fs = await folhasDa(pacote.hash);
+  const fs = [];
+  for (const f of await folhasDa(pacote.hash)) fs.push(await comImagem(f));   // a exportação leva as fotos
   const dados = {
     tipo: "gerador-de-provas/resultados-celular", versao: 1, hash: pacote.hash, chave_arquivo: pacote.chave_arquivo,
     nome_notas: pacote.nome_notas, exportado_em: new Date().toISOString(),
@@ -1247,8 +1310,7 @@ window.addEventListener("load", async () => {
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
   aplicarTema(document.documentElement.dataset.tema || "vidro");
   estadoLeitura("Preparando a leitura…");
-  modelosProntos = Identificacao.carregarModelos(BASE, (t) => estadoLeitura(t)).then(() => estadoLeitura(""));
-  modelosProntos.catch(e => estadoLeitura("Não consegui carregar os modelos de leitura: " + e.message, true));
+  // os modelos de leitura (uns 23 MB) só são carregados ao entrar numa prova: ver a agenda ou as turmas não os carrega
   $("#abrir").onchange = async (ev) => {
     const arqs = [...ev.target.files]; ev.target.value = "";
     if (arqs.length) await abrirArquivos(arqs);

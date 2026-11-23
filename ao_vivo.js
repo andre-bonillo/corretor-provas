@@ -167,7 +167,7 @@ const AoVivo = (() => {
     el("passo-resultado").hidden = true;
     aviso("Abrindo a câmera…");
     try {
-      await modelosProntos;
+      await prepararModelos();
       fluxo = window.__fonteTeste ? window.__fonteTeste() : await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: { facingMode: { ideal: "environment" }, width: { ideal: 3840 }, height: { ideal: 2160 } },
