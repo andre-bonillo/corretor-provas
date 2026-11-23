@@ -8,16 +8,11 @@
 <meta name="apple-mobile-web-app-title" content="Logos">
 <meta name="theme-color" content="#0f4c75">
 <meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' blob: data: https://api.github.com https://graph.microsoft.com https://login.microsoftonline.com https://*.sharepoint.com https://*.1drv.com https://*.livefilestore.com; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="icone-180.png">
 <title>Logos</title>
-<script>{ const q = new URLSearchParams(location.search), h = document.documentElement; let t = null, c = null;
-  try { t = localStorage.getItem("tema"); c = localStorage.getItem("cor"); } catch (e) {}
-  h.dataset.tema = q.get("tema") || t || "vidro";
-  // Vidro automático (padrão): Oceano das 6h às 18h, Meia-noite no resto do tempo
-  let cor = q.get("cor") || c || "auto";
-  if (cor === "auto") { const hr = new Date().getHours(); cor = hr >= 6 && hr < 18 ? "oceano" : "meia-noite"; }
-  if (cor !== "violeta") h.dataset.cor = cor; }</script>
+<script src="tema-inicial.js"></script>
 <style>
   :root {
     --azul: #1f3a5f; --azul-claro: #e8eef6; --fundo: #f2f3f7; --cartao: #fff; --texto: #1b1b1b; --fraco: #5f6670;
@@ -599,6 +594,7 @@
   /* Início (inicio.js): resumo de provas, disciplinas e calendário — cartões compactos */
   .ini-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 10px; }
   .ini-hoje { font-size: 15px; font-weight: 600; margin: 0 4px; }
+  .ini-alerta { margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; font-size: 14px; line-height: 1.35; background: #fde8e8; color: #8a1f1f; border: 1px solid #f3b4b4; }
   [data-tema="vidro"] .ini-hoje { color: #fff; }
   .ini-numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; flex: 1 1 100%; }
   .ini-numeros > * { background: var(--cartao); border: var(--cartao-borda); border-radius: 12px; box-shadow: var(--sombra); padding: 6px 4px;
@@ -768,7 +764,7 @@
     <span class="rotulo op-rotulo">Sincronização</span>
     <!-- provas automáticas: repositório privado no GitHub (github.js) -->
     <div id="gh-cartao" class="cartao od">
-      <div class="od-linha"><span id="gh-quem" class="od-quem">Provas automáticas desligadas</span>
+      <div class="od-linha"><span id="gh-quem" class="od-quem">Sincronização desligada</span>
         <span><button id="gh-buscar" class="mini" hidden>Buscar agora</button> <button id="gh-ligar" class="mini">Ligar</button></span></div>
       <div id="gh-campo" hidden>
         <div class="campo" style="margin-top:10px"><label for="gh-chave">Chave de acesso do GitHub (fica só neste aparelho)</label>

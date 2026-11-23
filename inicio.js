@@ -94,6 +94,18 @@
     return c;
   }
 
+  async function avisoSoNoAparelho(el) {
+    if (!window.Sincronia || !Sincronia.ligada()) return;
+    const n = await Sincronia.soNoAparelho().catch(() => null);
+    if (!n) return;
+    el.textContent = `${n} folha(s) corrigida(s) só neste aparelho, ainda não enviada(s) ao GitHub. Não apague o app da tela de início antes de sincronizar ou exportar.`;
+    el.hidden = false;
+  }
+  window.addEventListener("sincronia-mudou", () => {
+    const el = document.querySelector("#vista-inicio .ini-alerta");
+    if (el) { el.hidden = true; avisoSoNoAparelho(el); }
+  });
+
   window.desenharInicio = function desenharInicio() {
     const caixa = $("#vista-inicio"); caixa.innerHTML = ""; caixa.className = "ini";
     const { ps, porHash, pendentes } = dadosLista;
@@ -165,6 +177,9 @@
     const grade = document.createElement("div"); grade.className = "ini-grade-quadros";
     const cAulas = window.Turmas ? Turmas.cartaoProximasAulas() : null;     // agenda das turmas (turmas.js)
     grade.append(col(...[cAulas, miniCalendario(ps), cProx].filter(Boolean)), col(cCor, cDisc));
-    caixa.append(topo, grade);
+    // aviso fixo: folhas que ainda não chegaram ao GitHub (somem do aparelho se o atalho for apagado)
+    const alerta = document.createElement("div"); alerta.className = "ini-alerta"; alerta.hidden = true;
+    caixa.append(topo, alerta, grade);
+    avisoSoNoAparelho(alerta);
   };
 })();

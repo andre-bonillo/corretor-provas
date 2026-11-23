@@ -10,6 +10,8 @@ let pacote = null, atual = null, modelosProntos = null;
 // Armazenamento no aparelho (IndexedDB)
 // ---------------------------------------------------------------------------
 
+// pede ao navegador que não apague os dados do app quando faltar espaço (no iPhone, vale para o app da tela de início)
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(() => {}); } catch (e) {}
 const banco = new Promise((ok, falha) => {
   const r = indexedDB.open("corretor-provas", 1);
   r.onupgradeneeded = () => {
@@ -27,6 +29,8 @@ async function tx(loja, modo, f) {
     const res = f(t.objectStore(loja));
     t.oncomplete = () => ok(res && "result" in res ? res.result : res);
     t.onerror = () => falha(t.error);
+    // gravação cancelada (o caso comum é o armazenamento do aparelho cheio): sem isto a promessa nunca terminaria
+    t.onabort = () => falha(t.error || new Error("a gravação foi cancelada; o armazenamento do aparelho pode estar cheio"));
   });
 }
 const guardar = (loja, v, k) => tx(loja, "readwrite", s => s.put(v, k));
@@ -519,10 +523,17 @@ async function abrirPacote(p) {
 }
 
 async function removerProva() {
-  const fs = await folhasDa(pacote.hash), pend = await naoExportadas(pacote.hash, fs);
+  const fs = await folhasDa(pacote.hash);
+  // só tranquiliza quando o GitHub confirmou cada folha; um arquivo exportado pode não ter sido salvo
+  let soAqui = fs.length;
+  if (window.Sincronia && Sincronia.ligada()) { soAqui = 0; for (const f of fs) if (!(await Sincronia.confirmada(f))) soAqui++; }
+  const exp = await ler("config", "exportado:" + pacote.hash).catch(() => null);
+  const pend = soAqui;
   const texto = !fs.length ? "A prova sai da lista. Dá para abrir o arquivo de novo quando quiser."
-    : pend ? `Atenção: ${pend} folha(s) corrigida(s) ainda não foram exportadas e serão apagadas deste aparelho. Exporte antes, se ainda não lançou as notas.`
-    : `As ${fs.length} folha(s) corrigida(s) já foram exportadas e também saem deste aparelho.`;
+    : !soAqui ? `As ${fs.length} folha(s) corrigida(s) estão guardadas no GitHub e saem só deste aparelho.`
+    : exp && !(await naoExportadas(pacote.hash, fs))
+      ? `Atenção: ${soAqui} folha(s) só estão neste aparelho. Foram exportadas em ${quandoBR(exp.quando)}; antes de remover, confira se esse arquivo está salvo na pasta da prova, no OneDrive.`
+      : `Atenção: ${soAqui} folha(s) corrigida(s) ainda não foram exportadas e serão apagadas deste aparelho. Exporte antes, se ainda não lançou as notas.`;
   const r = await perguntar(`Remover “${nomeProva(pacote)}”?`, texto,
     [...(pend ? [{ rotulo: "Exportar antes", valor: "exportar" }] : []), { rotulo: fs.length ? "Remover prova e folhas" : "Remover prova", valor: "remover", classe: "perigo" }]);
   if (r === "exportar") return exportar();
@@ -531,6 +542,7 @@ async function removerProva() {
   await apagar("pacotes", pacote.hash);
   await apagar("config", "uso:" + pacote.hash);
   await apagar("config", "exportado:" + pacote.hash);
+  if (window.Sincronia) await Sincronia.esquecerProva(pacote.hash).catch(() => {});
   if ((await ler("config", "atual")) === pacote.hash) await apagar("config", "atual");
   pacote = null;
   irPara("provas");
@@ -1097,8 +1109,13 @@ async function salvarAtual() {
     imagem: atual.miniatura,
   };
   if (anteriores.length) folha.id = anteriores[0].id;   // substitui a anterior (mesmo registro)
-  await guardar("folhas", folha);
-  for (const f of anteriores.slice(1)) await apagar("folhas", f.id);   // repetidas antigas
+  try {
+    await guardar("folhas", folha);
+  } catch (e) {
+    status("A folha NÃO foi guardada: " + (e && e.message || "erro ao gravar") + ". Libere espaço no aparelho e toque em Guardar de novo.", true);
+    return false;
+  }
+  for (const f of anteriores.slice(1)) await apagar("folhas", f.id).catch(() => {});   // repetidas antigas
   window.dispatchEvent(new CustomEvent("folhas-mudaram"));              // sincronização (github.js)
   atual = null;
   $("#passo-resultado").hidden = true;
@@ -1258,7 +1275,5 @@ window.addEventListener("load", async () => {
   const auto = $("#vivo-auto");
   auto.checked = !!(await ler("config", "guardar-sozinho").catch(() => false));
   auto.onchange = () => guardar("config", auto.checked, "guardar-sozinho");
-  const h = await ler("config", "atual").catch(() => null);
-  const p = h ? await ler("pacotes", h) : null;
-  if (p) await abrirPacote(p); else irPara("provas");
+  irPara("provas");                                   // o app sempre abre no Início (não reabre a última prova)
 });

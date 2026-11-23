@@ -1,13 +1,18 @@
-# Proteção: nada de dados de provas, alunos ou notas no repositório público
-*.json
+# Proteção: este repositório é PÚBLICO. Nada de dados de provas, alunos, notas ou capturas de tela.
+# Lista de permissão: tudo é ignorado, exceto os arquivos do app listados abaixo.
+# Para publicar um arquivo novo do app, acrescente-o aqui de propósito.
+*
+!*/
+!.gitignore
+!.nojekyll
+!README.md
+!index.html
 !manifest.webmanifest
-*.xlsx
-*.xls*
-*.csv
-*.jpg
-*.jpeg
-*.pdf
-*.docx
-*.txt
-!modelos/ppocrv5_latin_dict.txt
+!icone.png
+!icone-180.png
+!*.js
+!vendor/*.mjs
+!vendor/*.wasm
 !vendor/ORIGEM.txt
+!modelos/*.onnx
+!modelos/ppocrv5_latin_dict.txt

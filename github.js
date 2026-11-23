@@ -18,7 +18,8 @@
   const gravarChave = (v) => { try { v ? localStorage.setItem(CHAVE, v) : localStorage.removeItem(CHAVE); } catch (e) {} };
   const lerUltima = () => { try { return +localStorage.getItem(ULTIMA) || 0; } catch (e) { return 0; } };
   const caminho = (p) => p.split("/").map(encodeURIComponent).join("/");
-  let rodando = false, deNovo = false, semEscrita = false, avisouEscrita = false;
+  let rodando = false, deNovo = false, semEscrita = false, avisouEscrita = false, avisouFalha = false;
+  let problema = "";      // última falha da sincronização (aparece em Ajustes até uma rodada completa dar certo)
 
   function erro(msg, extra) { return Object.assign(new Error(msg), extra || {}); }
 
@@ -121,7 +122,10 @@
     for (const [path, sha] of Object.entries(remoto)) {
       const visto = await ler("config", "ghf:" + path).catch(() => null);
       if ((visto && visto.sha === sha) || apagandoAqui.has(path)) continue;
-      const r = JSON.parse(await api(`${BASE}/contents/${caminho(path)}`, { bruto: true }));
+      let r;
+      try { r = JSON.parse(await api(`${BASE}/contents/${caminho(path)}`, { bruto: true })); }
+      catch (e) { if (e.chave) throw e; console.warn("folha ilegível:", path, e); res.falhas++; continue; }   // pula e segue
+      if (!r || typeof r !== "object") { res.falhas++; continue; }
       const loc = porCaminho[path];
       const mudouAqui = loc && (!visto || visto.quando !== loc.quando);
       if (r.apagada) {
@@ -172,11 +176,13 @@
   // ---------------------------------------------------------------- provas
   async function receberProvas(itens) {
     const arquivos = itens.filter(i => /^provas\/[^/]+ - Celular \(.*\)\.json$/i.test(i.path));
-    let novas = 0, atualizadas = 0;
+    let novas = 0, atualizadas = 0, falhas = 0;
     for (const i of arquivos) {
       const nome = i.path.slice("provas/".length);
       if ((await ler("config", "gh:" + nome).catch(() => null)) === i.sha) continue;   // já visto nesta versão
-      const p = JSON.parse(await api(`${BASE}/contents/${caminho(i.path)}`, { bruto: true }));
+      let p;
+      try { p = JSON.parse(await api(`${BASE}/contents/${caminho(i.path)}`, { bruto: true })); }
+      catch (e) { if (e.chave) throw e; console.warn("prova ilegível:", i.path, e); falhas++; continue; }   // pula e segue
       if (p && p.tipo === "gerador-de-provas/celular") {
         const antes = await ler("pacotes", p.hash);
         if (!antes || JSON.stringify(antes) !== JSON.stringify(p)) {
@@ -186,7 +192,7 @@
       }
       await guardar("config", i.sha, "gh:" + nome);
     }
-    return { novas, atualizadas, total: arquivos.length };
+    return { novas, atualizadas, falhas, total: arquivos.length };
   }
 
   // ---------------------------------------------------------------- turmas (só leitura)
@@ -204,7 +210,9 @@
     for (const i of arquivos) {
       agora[i.path] = i.sha;
       if (vistos[i.path] === i.sha) continue;
-      const p = JSON.parse(await api(`${BASE}/contents/${caminho(i.path)}`, { bruto: true }));
+      let p;
+      try { p = JSON.parse(await api(`${BASE}/contents/${caminho(i.path)}`, { bruto: true })); }
+      catch (e) { if (e.chave) throw e; console.warn("turma ilegível:", i.path, e); delete agora[i.path]; continue; }
       if (p && p.tipo === "gerador-de-provas/turma") {
         turmas = turmas.filter(t => t._path !== i.path && t.id !== p.id).concat({ ...p, _path: i.path });
         mudou = true;
@@ -235,8 +243,12 @@
       const f = await sincronizarFolhas(itens);
       try { await receberTurmas(itens); }                 // uma falha aqui não atrapalha as provas e as folhas
       catch (e) { if (e.chave) throw e; console.warn("turmas:", e); }
-      try { localStorage.setItem(ULTIMA, String(Date.now())); } catch (e) {}
+      const falhas = p.falhas + f.falhas;
+      if (semEscrita) problema = "a chave só permite leitura: as folhas não estão sendo enviadas";
+      else if (falhas) problema = `${falhas} arquivo(s) não passaram; tento de novo na próxima vez`;
+      else { problema = ""; try { localStorage.setItem(ULTIMA, String(Date.now())); } catch (e) {} }
       mostrar();
+      window.dispatchEvent(new Event("sincronia-mudou"));
       if (p.novas || p.atualizadas || f.recebidas || f.apagadas) {
         await listarProvas();
         if (typeof pacote !== "undefined" && pacote && !$("#tela-prova").hidden) await listar();
@@ -254,7 +266,14 @@
         status(f.enviadas ? `${f.enviadas} folha(s) enviada(s) ao GitHub.` : "Tudo em dia.", false, "ok");
       }
     } catch (e) {
-      if (!silencioso || e.chave) status("Não consegui sincronizar com o GitHub: " + e.message + ".", true);
+      const semRede = e instanceof TypeError;            // sem internet ou sinal fraco: tenta de novo quando voltar
+      problema = semRede ? "sem conexão com o GitHub na última tentativa" : e.message;
+      mostrar();
+      window.dispatchEvent(new Event("sincronia-mudou"));
+      if (!silencioso || e.chave || (!semRede && !avisouFalha)) {
+        avisouFalha = true;
+        status("Não consegui sincronizar com o GitHub: " + e.message + ". As folhas continuam guardadas neste aparelho.", true);
+      }
     } finally {
       rodando = false;
       if (deNovo) { deNovo = false; agendar(); }
@@ -263,15 +282,37 @@
 
   function mostrar() {
     const on = !!lerChave(), u = lerUltima();
-    $("#gh-quem").textContent = on
-      ? "Sincronização ligada" + (u ? " · " + new Date(u).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "")
-      : "Provas automáticas desligadas";
+    const hora = u ? new Date(u).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+    $("#gh-quem").textContent = !on ? "Sincronização desligada"
+      : problema ? "Sincronização com problema: " + problema + (hora ? ` · última completa: ${hora}` : "")
+      : "Sincronização ligada" + (hora ? " · " + hora : "");
     $("#gh-buscar").hidden = !on;
     $("#gh-ligar").textContent = on ? "Desligar" : "Ligar";
     if (on) $("#gh-campo").hidden = true;
   }
 
-  window.Sincronia = { ligada: () => !!lerChave(), sincronizar };
+  // Folhas que o GitHub já confirmou ter recebido nesta versão (o arquivo de lá tem o mesmo "quando").
+  async function confirmada(f) {
+    const visto = await ler("config", "ghf:" + await caminhoDa(f)).catch(() => null);
+    return !!(visto && visto.quando === f.quando);
+  }
+  // Quantas folhas existem só neste aparelho (ainda não confirmadas no GitHub).
+  async function soNoAparelho(fs) {
+    if (!lerChave()) return null;
+    let n = 0;
+    for (const f of fs || await todos("folhas")) if (!(await confirmada(f))) n++;
+    return n;
+  }
+  // Ao remover uma prova do aparelho, as marcas de "já visto" saem junto: se a prova voltar, as folhas são baixadas de novo.
+  async function esquecerProva(hash) {
+    const chaves = await tx("config", "readonly", st => st.getAllKeys()).catch(() => []);
+    for (const k of chaves) {
+      if (typeof k !== "string") continue;
+      if (k.startsWith(`ghf:resultados/${hash}/`)) await apagar("config", k);
+    }
+  }
+
+  window.Sincronia = { ligada: () => !!lerChave(), sincronizar, confirmada, soNoAparelho, esquecerProva };
 
   window.addEventListener("load", () => {
     $("#gh-ligar").onclick = async () => {
@@ -300,6 +341,9 @@
     mostrar();
     sincronizar(true);
   });
+
+  // a internet voltou: envia o que ficou pendente
+  window.addEventListener("online", () => { if (lerChave()) agendar(); });
 
   // No iPhone, o app da tela de início volta do segundo plano sem recarregar: sincroniza ao reaparecer.
   document.addEventListener("visibilitychange", () => {
