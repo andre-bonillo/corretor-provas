@@ -6,6 +6,7 @@
   // Vidro automático (padrão): Oceano das 6h às 18h, Meia-noite no resto do tempo
   let cor = q.get("cor") || c || "auto";
   if (cor === "auto") { const hr = new Date().getHours(); cor = hr >= 6 && hr < 18 ? "oceano" : "meia-noite"; }
+  if (cor === "sistema") cor = matchMedia("(prefers-color-scheme: dark)").matches ? "meia-noite" : "oceano";
   if (cor !== "violeta") h.dataset.cor = cor; }
 
 // Tamanho do texto: acompanha o ajuste do iPhone/iPad (Ajustes › Tela e Brilho › Tamanho do Texto).

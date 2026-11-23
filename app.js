@@ -1287,7 +1287,7 @@ async function escolherTema() {
   if (r === "vidro") await escolherCorVidro();
 }
 
-const CORES_VIDRO = [["auto", "Automático: Oceano de dia, Meia-noite à noite"], ["violeta", "Violeta"], ["oceano", "Oceano"], ["aurora", "Aurora"], ["por-do-sol", "Pôr do sol"], ["floresta", "Floresta"],
+const CORES_VIDRO = [["auto", "Automático: Oceano de dia, Meia-noite à noite"], ["sistema", "Como o iPhone: Oceano no modo claro, Meia-noite no escuro"], ["violeta", "Violeta"], ["oceano", "Oceano"], ["aurora", "Aurora"], ["por-do-sol", "Pôr do sol"], ["floresta", "Floresta"],
   ["academico", "Acadêmico"], ["vinho", "Vinho"], ["lavanda", "Lavanda"], ["grafite", "Grafite (escuro)"], ["meia-noite", "Meia-noite (escuro)"]];
 
 function corEscolhida() {
@@ -1299,6 +1299,7 @@ function aplicarCor() {
   if (new URLSearchParams(location.search).get("cor")) return;   // prévia
   let cor = corEscolhida();
   if (cor === "auto") { const hr = new Date().getHours(); cor = hr >= 6 && hr < 18 ? "oceano" : "meia-noite"; }
+  if (cor === "sistema") cor = matchMedia("(prefers-color-scheme: dark)").matches ? "meia-noite" : "oceano";
   const h = document.documentElement;
   if (cor === "violeta") delete h.dataset.cor; else h.dataset.cor = cor;
   aplicarTema(h.dataset.tema || "vidro");
@@ -1314,6 +1315,8 @@ async function escolherCorVidro() {
 }
 // troca de dia para noite com a página aberta, e ao voltar para ela
 setInterval(() => { if (corEscolhida() === "auto") aplicarCor(); }, 60000);
+// "Como o iPhone": troca na hora em que o aparelho muda entre claro e escuro
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (corEscolhida() === "sistema") aplicarCor(); }); } catch (e) {}
 document.addEventListener("visibilitychange", () => { if (!document.hidden && corEscolhida() === "auto") aplicarCor(); });
 
 // ---------------------------------------------------------------------------

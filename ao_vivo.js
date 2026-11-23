@@ -178,6 +178,10 @@ const AoVivo = (() => {
       const trilha = fluxo.getVideoTracks()[0];
       // foco contínuo, quando o aparelho permite
       try { await trilha.applyConstraints({ advanced: [{ focusMode: "continuous" }] }); } catch (e) { /* sem suporte */ }
+      // a lanterna só aparece quando o aparelho deixa o navegador ligá-la (no Safari do iPhone, em geral não deixa)
+      let temLanterna = false;
+      try { temLanterna = !!(trilha.getCapabilities && trilha.getCapabilities().torch); } catch (e) {}
+      el("vivo-lanterna").hidden = !temLanterna;
       rodando = true;
       proxima(false);
       laco();

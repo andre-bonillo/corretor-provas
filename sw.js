@@ -1,5 +1,5 @@
 // Guarda a página e os modelos no aparelho, para funcionar sem internet e abrir rápido com sinal fraco.
-const VERSAO = "corretor-v25";
+const VERSAO = "corretor-v26";
 // Arquivos leves do app: mudam a cada versão.
 const ARQUIVOS = ["./", "index.html", "tema-inicial.js", "app.js", "leitura.js", "identificacao.js", "ao_vivo.js", "onedrive.js", "nuvem.js", "github.js", "inicio.js", "turmas.js", "navegacao.js", "manifest.webmanifest", "icone.png", "icone-180.png"];
 // Arquivos pesados (biblioteca e modelos de leitura, uns 23 MB): quase nunca mudam. Ficam num cache próprio,
