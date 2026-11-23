@@ -747,7 +747,7 @@ function prepararAluno(sel, outro, ra, nome, aoMudar) {
     if (a) ra.value = a.ra;
     aoMudar && aoMudar();
   };
-  // sugestões da turma enquanto digita ("ana" ou "ana sou" já acham Ana Maria Souza)
+  // sugestões da turma enquanto digita ("ana" ou "ana sou" já acham "Ana Maria Souza")
   let sug = outro.nextElementSibling;
   if (!sug || !sug.classList.contains("sugestoes")) {
     sug = document.createElement("div"); sug.className = "sugestoes"; outro.after(sug);

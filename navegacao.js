@@ -158,7 +158,7 @@
 
     // no formato "ícones no alto", o estado da sincronização aparece sob o título
     const quem = $("#gh-quem"), sub = $("#provas-sub");
-    const copiar = () => { sub.textContent = lerFormato() === "icones" && window.Sincronia && Sincronia.ligada() ? quem.textContent : "Provas guardadas neste aparelho"; };
+    const copiar = () => { sub.textContent = lerFormato() === "icones" && window.Sincronia && Sincronia.ligada() ? quem.textContent : ""; };
     new MutationObserver(copiar).observe(quem, { childList: true, characterData: true, subtree: true });
     window.addEventListener("nav-mudou", copiar);
     copiar();

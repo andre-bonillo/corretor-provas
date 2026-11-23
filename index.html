@@ -47,6 +47,9 @@
            padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 16px) 12px calc(env(safe-area-inset-left) + 16px); }
   .barra h1 { margin: 0; font-size: var(--titulo-tam); font-family: var(--fonte-titulo); font-weight: 700; line-height: 1.2; letter-spacing: var(--titulo-espaco, 0); }
   .barra .sub { font-size: 13px; opacity: .8; margin-top: 2px; }
+  .barra .sub:empty { display: none; }
+  .barra h1.titulo-app { display: flex; align-items: center; gap: 10px; }
+  .logo-app { width: 1.4em; height: 1.4em; border-radius: 22%; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
   .barra .voltar { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; margin: -4px 0 2px -8px; padding: 0 8px;
                    background: none; border: 0; color: var(--voltar-cor); font-size: 16px; opacity: .9; cursor: pointer; }
   .barra .voltar::before { content: "‹"; font-size: 28px; line-height: 1; margin-top: -3px; }
@@ -724,7 +727,7 @@
 
 <!-- 1. Lista das provas guardadas no aparelho -->
 <section id="tela-provas" class="tela">
-  <header class="barra"><button class="nav-gaveta-botao" type="button" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>Logos</h1><div class="sub" id="provas-sub">Provas guardadas neste aparelho</div><div id="nav-icones" class="nav-icones"></div></header>
+  <header class="barra"><button class="nav-gaveta-botao" type="button" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1 class="titulo-app"><img class="logo-app" src="icone-180.png" alt="" width="34" height="34">Logos</h1><div class="sub" id="provas-sub"></div><div id="nav-icones" class="nav-icones"></div></header>
   <main>
     <!-- lugar previsto para a conexão com o OneDrive (onedrive.js, integrado depois) -->
     <div id="od-cartao" class="cartao od" hidden>
