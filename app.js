@@ -1122,8 +1122,8 @@ async function verificarRepetida() {
   const caixa = $("#r-ja");
   caixa.hidden = !ant;
   if (ant) caixa.innerHTML = `<b>${esc(ant.nome)} já tem folha guardada</b><br>Nota ${ant.nota === null ? "–" : numBR(ant.nota)} · guardada ${quandoBR(ant.quando)}. Guardar esta substitui a anterior.`;
-  $("#guardar").textContent = ant ? "Substituir a anterior" : "Guardar folha";
-  $("#descartar").textContent = ant ? "Manter a anterior" : "Não guardar";
+  $("#guardar").textContent = ant ? "Substituir a anterior" : "Salvar";
+  $("#descartar").textContent = ant ? "Manter a anterior" : "Descartar";
 }
 
 function mostrar(res, foto) {
@@ -1201,7 +1201,7 @@ function mostrar(res, foto) {
   for (const a of res.conferir) { const li = document.createElement("li"); li.textContent = a; c.appendChild(li); }
   $("#r-conferir-bloco").hidden = !res.conferir.length;
   $("#r-ja").hidden = true;
-  $("#guardar").textContent = "Guardar folha"; $("#descartar").textContent = "Não guardar";
+  $("#guardar").textContent = "Salvar"; $("#descartar").textContent = "Descartar";
   atualizarNota();
   verificarRepetida();
   $("#passo-resultado").hidden = false;
@@ -1391,9 +1391,12 @@ window.addEventListener("load", async () => {
     mostrarDataProva(); mesCal = null;
   };
   $("#aparencia").onclick = escolherTema;
-  // "Guardar sozinho" vem desligado; o aparelho lembra a escolha do professor.
+  // "Salvar sozinho" vem desligado; o aparelho lembra a escolha do professor.
   const auto = $("#vivo-auto");
   auto.checked = !!(await ler("config", "guardar-sozinho").catch(() => false));
   auto.onchange = () => guardar("config", auto.checked, "guardar-sozinho");
+  // topo: depois de rolar, ganha uma linha fina embaixo (sem desfoque)
+  const marcarRolagem = () => document.documentElement.classList.toggle("rolou", window.scrollY > 4);
+  window.addEventListener("scroll", marcarRolagem, { passive: true }); marcarRolagem();
   irPara("provas");                                   // o app sempre abre no Início (não reabre a última prova)
 });

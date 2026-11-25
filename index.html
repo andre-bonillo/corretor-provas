@@ -44,6 +44,7 @@
   .barra .sub { font-size: 13px; opacity: .8; margin-top: 2px; }
   .barra .sub:empty { display: none; }
   .barra h1.titulo-app { display: flex; align-items: center; gap: 10px; }
+  .nome-grego { font-family: "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif; font-weight: 600; letter-spacing: .01em; }
   .logo-app { width: 1.4em; height: 1.4em; border-radius: 22%; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
   .barra .voltar { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; margin: -4px 0 2px -8px; padding: 0 8px;
                    background: none; border: 0; color: var(--voltar-cor); font-size: 16px; opacity: .9; cursor: pointer; }
@@ -232,34 +233,47 @@
 
   /* correção ao vivo */
   body.vivo-aberto { overflow: hidden; }
-  #vivo { position: fixed; inset: 0; background: #000; z-index: 20; display: flex; flex-direction: column; }
-  #vivo-camera { position: relative; flex: 0 0 50%; overflow: hidden; }
+  #vivo { position: fixed; inset: 0; background: #000; z-index: 20; }
+  #vivo-camera { position: absolute; inset: 0; overflow: hidden; }
   #vivo-video, #vivo-marcas { position: absolute; inset: 0; width: 100%; height: 100%; }
   #vivo-video { object-fit: cover; }
+  /* a câmera ocupa a tela inteira: em cima, fechar · contagem · lanterna; embaixo, a orientação e a chave "Salvar sozinho" */
   #vivo-topo { position: absolute; top: env(safe-area-inset-top); left: env(safe-area-inset-left); right: env(safe-area-inset-right);
-               display: flex; align-items: center; padding: 8px 10px; gap: 6px; }
-  #vivo-topo .esp { flex: 1; }
-  #vivo-topo button, #vivo-topo label { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; background: rgba(0,0,0,.55);
-               color: #fff; border: 0; border-radius: 20px; padding: 0 11px; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer;
-               -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-  #vivo-topo #vivo-fechar { width: 40px; padding: 0; justify-content: center; font-size: 20px; }
-  #vivo-topo label input { width: 18px; height: 18px; margin: 0; accent-color: #2ecc40; }
-  #vivo-contagem { position: absolute; top: calc(env(safe-area-inset-top) + 56px); left: 10px; background: rgba(0,0,0,.55); color: #fff;
-                   border-radius: 12px; padding: 3px 10px; font-size: 13px; }
-  #vivo-aviso { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px; background: rgba(0,0,0,.65); color: #fff;
+               display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; min-height: 60px; }
+  #vivo-topo button { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0;
+               background: rgba(0,0,0,.55); color: #fff; border: 0; border-radius: 50%; font-size: 20px; cursor: pointer; }
+  #vivo-topo #vivo-lanterna { font-size: 18px; }
+  #vivo-topo #vivo-lanterna.ligada { background: #ffd23f; color: #000; }
+  #vivo-contagem { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.55); color: #fff;
+                   border-radius: 18px; padding: 7px 14px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  #vivo-contagem:empty { display: none; }
+  #vivo-baixo { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 10px;
+                padding: 30px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px);
+                background: linear-gradient(transparent, rgba(0,0,0,.6)); }
+  #vivo-aviso { padding: 11px 14px; border-radius: 16px; background: rgba(0,0,0,.62); color: #fff;
                 font-size: 16px; font-weight: 600; text-align: center; transition: background .2s; }
+  #vivo-aviso:empty { display: none; }
   #vivo-aviso.ok { background: rgba(30,125,50,.92); }
   #vivo-aviso.alerta { background: rgba(200,120,0,.92); }
-  #vivo-painel { flex: 1; overflow-y: auto; background: var(--fundo); padding: 12px 14px 0; -webkit-overflow-scrolling: touch; }
-  #vivo-painel .vazio { color: #8a9099; }
-  #vivo-painel:has(#passo-resultado:not([hidden])) #vivo-vazio { display: none; }
-  #vivo-topo #vivo-lanterna { width: 40px; padding: 0; justify-content: center; font-size: 18px; }
-  #vivo-topo #vivo-lanterna.ligada { background: #ffd23f; color: #000; }
-  /* folha lida: a câmera vira só uma faixa com os botões e o resultado ocupa a tela */
-  #vivo.com-resultado { flex-direction: column; }
-  #vivo.com-resultado #vivo-camera { flex: 0 0 auto; height: calc(env(safe-area-inset-top) + 56px); }
-  #vivo.com-resultado #vivo-marcas, #vivo.com-resultado #vivo-contagem, #vivo.com-resultado #vivo-aviso { display: none; }
-  #vivo.com-resultado #vivo-painel { padding-top: 12px; }
+  .vivo-chave { display: inline-flex; align-self: flex-start; align-items: center; gap: 10px; min-height: 44px; color: #fff;
+                font-size: 15px; font-weight: 600; cursor: pointer; }
+  .vivo-chave input { -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 48px; height: 28px; margin: 0;
+                      border-radius: 14px; background: rgba(255,255,255,.35); transition: background .2s; cursor: pointer; }
+  .vivo-chave input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+                             background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+  .vivo-chave input:checked { background: #2ecc40; }
+  .vivo-chave input:checked::after { transform: translateX(20px); }
+  .vivo-chave input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  /* folha lida: o resultado sobe num painel por cima da câmera */
+  #vivo-painel { display: none; position: absolute; left: 0; right: 0; bottom: 0; max-height: 84vh; max-height: 84dvh; overflow-y: auto;
+                 background: var(--fundo); border-radius: 22px 22px 0 0; padding: 8px 14px 0; box-shadow: 0 -8px 28px rgba(0,0,0,.45);
+                 -webkit-overflow-scrolling: touch; }
+  #vivo-painel::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--fraco); opacity: .45; margin: 0 auto 10px; }
+  #vivo.com-resultado #vivo-painel { display: block; }
+  #vivo.com-resultado #vivo-marcas, #vivo.com-resultado #vivo-baixo { display: none; }
+  #vivo #passo-resultado .acoes { flex-wrap: wrap; background: var(--vidro-painel, var(--fundo)); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  #vivo #passo-resultado .acoes #vivo-de-novo { flex: 1 0 100%; min-height: 44px; background: none; border: 0; color: var(--destaque);
+                 font-size: 15px; font-weight: 600; cursor: pointer; }
 
   /* filtros, capas, calendário, alunos */
   .filtros { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -439,6 +453,11 @@
   [data-tema="vidro"] .progresso .numeros div, [data-tema="vidro"] .itens.embutida { background: rgba(255,255,255,.45); }
   [data-tema="vidro"] .rodape .botao.sec { color: var(--vidro-acento); background: rgba(255,255,255,.62); }
   [data-tema="vidro"] #vivo-painel { background: var(--vidro-painel); }
+  /* Vidro: topo sem desfoque. Mostra o pedaço de cima do fundo do app (fica igual ao fundo no alto da página)
+     e, depois de rolar, ganha só uma linha fina embaixo. */
+  [data-tema="vidro"] .barra { background: var(--vidro-fundo) top / 100% 100vh no-repeat; -webkit-backdrop-filter: none; backdrop-filter: none;
+    border-bottom: 1px solid transparent; transition: border-color .2s, box-shadow .2s; }
+  html.rolou[data-tema="vidro"] .barra { border-bottom-color: rgba(255,255,255,.12); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
 
 
   /* Vidro: composições de cores (data-cor) */
@@ -556,9 +575,9 @@
   }
   /* câmera ao vivo no iPad deitado: câmera à esquerda, resultado à direita */
   @media (min-width: 900px) and (orientation: landscape) {
-    #vivo { flex-direction: row; }
-    #vivo-camera { flex: 0 0 56%; }
-    #vivo-painel { padding-top: calc(env(safe-area-inset-top) + 14px); }
+    #vivo-painel { left: auto; top: 0; width: 44%; max-height: none; border-radius: 22px 0 0 22px; padding-top: calc(env(safe-area-inset-top) + 14px); }
+    #vivo-painel::before { display: none; }
+    #vivo.com-resultado #vivo-topo { right: 44%; }
   }
   /* navegação da tela inicial (navegacao.js): A abas, B ícones no alto, D barra flutuante */
   .nav-abas, .nav-flutuante, .nav-icones { display: none; }
@@ -735,7 +754,7 @@
 
 <!-- 1. Lista das provas guardadas no aparelho -->
 <section id="tela-provas" class="tela">
-  <header class="barra"><button class="nav-gaveta-botao" type="button" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1 class="titulo-app"><img class="logo-app" src="icone-180.png" alt="" width="34" height="34">Logos</h1><div class="sub" id="provas-sub"></div><div id="nav-icones" class="nav-icones"></div></header>
+  <header class="barra"><button class="nav-gaveta-botao" type="button" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1 class="titulo-app"><img class="logo-app" src="icone-180.png" alt="" width="34" height="34"><span class="nome-grego" lang="el">Λόγος</span></h1><div class="sub" id="provas-sub"></div><div id="nav-icones" class="nav-icones"></div></header>
   <main>
     <!-- lugar previsto para a conexão com o OneDrive (onedrive.js, integrado depois) -->
     <div id="od-cartao" class="cartao od" hidden>
@@ -917,8 +936,8 @@
       </div>
       <div class="col conf-b"><div class="cartao"><span class="rotulo">Folha lida</span><div id="r-folha"></div></div></div>
       <div class="acoes linha">
-        <button id="descartar" class="botao sec">Não guardar</button>
-        <button id="guardar" class="botao verde">Guardar folha</button>
+        <button id="descartar" class="botao sec">Descartar</button>
+        <button id="guardar" class="botao verde">Salvar</button>
       </div>
     </div>
   </main>
@@ -943,15 +962,15 @@
     <canvas id="vivo-marcas"></canvas>
     <div id="vivo-topo">
       <button id="vivo-fechar" aria-label="Fechar a câmera">✕</button>
+      <div id="vivo-contagem"></div>
       <button id="vivo-lanterna" aria-label="Ligar a lanterna" aria-pressed="false">🔦</button>
-      <span class="esp"></span>
-      <label><input id="vivo-auto" type="checkbox"> Guardar sozinho</label>
-      <button id="vivo-de-novo">Ler de novo</button>
     </div>
-    <div id="vivo-contagem"></div>
-    <div id="vivo-aviso"></div>
+    <div id="vivo-baixo">
+      <div id="vivo-aviso" role="status" aria-live="polite"></div>
+      <label class="vivo-chave"><input id="vivo-auto" type="checkbox" role="switch"> Salvar sozinho</label>
+    </div>
   </div>
-  <div id="vivo-painel"><div class="vazio" id="vivo-vazio">A nota aparece aqui assim que a folha for lida.</div></div>
+  <div id="vivo-painel"><button id="vivo-de-novo" type="button">↻ Ler de novo</button></div>
 </div>
 <script src="vendor/ort.wasm.min.js"></script>
 <script src="leitura.js"></script>

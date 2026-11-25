@@ -63,7 +63,7 @@ const AoVivo = (() => {
     ctx.lineWidth = 4; ctx.strokeStyle = cor; ctx.stroke();
   }
 
-  // Folha lida: o resultado ocupa a tela; a câmera vira uma faixa com os botões.
+  // Folha lida: o resultado sobe num painel por cima da câmera.
   function telaCheia(sim) { el("vivo").classList.toggle("com-resultado", sim); }
 
   async function ligarLanterna(ligar) {
@@ -164,6 +164,7 @@ const AoVivo = (() => {
     el("vivo").hidden = false;
     document.body.classList.add("vivo-aberto");
     el("vivo-painel").appendChild(el("passo-resultado"));
+    el("passo-resultado").querySelector(".acoes").appendChild(el("vivo-de-novo"));   // "Ler de novo" fica embaixo de Descartar e Salvar
     el("passo-resultado").hidden = true;
     aviso("Abrindo a câmera…");
     try {
@@ -202,6 +203,7 @@ const AoVivo = (() => {
     telaCheia(false);
     el("vivo").hidden = true;
     document.body.classList.remove("vivo-aberto");
+    el("vivo-painel").appendChild(el("vivo-de-novo"));
     el("conferencia-corpo").appendChild(el("passo-resultado"));
     if (atual) { el("passo-resultado").hidden = false; irPara("conferencia"); }
     listar();

@@ -129,7 +129,7 @@
     $("#nav-icones").innerHTML =       // no cabeçalho, sempre em contorno (sobre a cor da barra)
       `<button type="button" data-acao="sinc" aria-label="Sincronizar agora" title="Sincronizar agora">${svg("sinc", 22)}</button>` +
       `<button type="button" data-acao="opcoes" aria-label="Opções" title="Opções">${svg("mais", 22)}</button>`;
-    $("#nav-lateral").innerHTML = `<div class="titulo">Logos</div>` +
+    $("#nav-lateral").innerHTML = `<div class="titulo nome-grego" lang="el">Λόγος</div>` +
       ["inicio", "lista", "disciplinas", "calendario"].map(m => `<button type="button" data-nav-modo="${m}">${icone(m)}${ROTULOS[m]}</button>`).join("") +
       `<div class="sep"></div>` +
       `<button type="button" data-acao="abrir">${icone("abrir")}Abrir arquivo da prova</button>` +
