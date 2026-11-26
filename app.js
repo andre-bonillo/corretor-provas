@@ -1318,6 +1318,9 @@ function aplicarTema(t) {
   if (!/^#/.test(cor)) cor = (est.getPropertyValue("--vidro-fundo").match(/#[0-9a-fA-F]{6}/) || [""])[0];
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta && /^#/.test(cor)) meta.content = cor;
+  // Vidro: a barra do topo usa a primeira cor do fundo, lisa
+  const topo = (est.getPropertyValue("--vidro-fundo").match(/#[0-9a-fA-F]{6}/) || [""])[0];
+  if (topo) document.documentElement.style.setProperty("--vidro-topo", topo);
 }
 
 async function escolherTema() {

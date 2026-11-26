@@ -453,9 +453,9 @@
   [data-tema="vidro"] .progresso .numeros div, [data-tema="vidro"] .itens.embutida { background: rgba(255,255,255,.45); }
   [data-tema="vidro"] .rodape .botao.sec { color: var(--vidro-acento); background: rgba(255,255,255,.62); }
   [data-tema="vidro"] #vivo-painel { background: var(--vidro-painel); }
-  /* Vidro: topo sem desfoque. Mostra o pedaço de cima do fundo do app (fica igual ao fundo no alto da página)
-     e, depois de rolar, ganha só uma linha fina embaixo. */
-  [data-tema="vidro"] .barra { background: var(--vidro-fundo) top / 100% 100vh no-repeat; -webkit-backdrop-filter: none; backdrop-filter: none;
+  /* Vidro: topo sem desfoque, numa cor lisa; depois de rolar, ganha só uma linha fina embaixo. */
+  /* cor lisa (a primeira cor do fundo): o iPhone usa a cor de uma barra fixa lisa no lugar do seu próprio desfoque sob o relógio */
+  [data-tema="vidro"] .barra { background: var(--vidro-topo, #0f4c75); -webkit-backdrop-filter: none; backdrop-filter: none;
     border-bottom: 1px solid transparent; transition: border-color .2s, box-shadow .2s; }
   html.rolou[data-tema="vidro"] .barra { border-bottom-color: rgba(255,255,255,.12); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
 
